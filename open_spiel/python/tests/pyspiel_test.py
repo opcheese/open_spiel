@@ -27,7 +27,8 @@ from open_spiel.python.mfg import games as mfgs  # pylint: disable=unused-import
 import pyspiel
 
 # Specify game names in alphabetical order, to make the test easier to read.
-EXPECTED_GAMES = set([
+EXPECTED_GAMES = frozenset([
+    "amazons",
     "backgammon",
     "battleship",
     "blackjack",
@@ -114,6 +115,7 @@ EXPECTED_GAMES = set([
     "tiny_hanabi",
     "trade_comm",
     "turn_based_simultaneous_game",
+    "ultimate_tic_tac_toe",
     "y",
 ])
 
@@ -123,12 +125,14 @@ class PyspielTest(absltest.TestCase):
   def test_registered_names(self):
     game_names = pyspiel.registered_names()
 
-    expected = EXPECTED_GAMES
-    if os.environ.get("OPEN_SPIEL_BUILD_WITH_HANABI", "OFF") == "ON":
-      expected.add("hanabi")
-    if os.environ.get("OPEN_SPIEL_BUILD_WITH_ACPC", "OFF") == "ON":
-      expected.add("universal_poker")
-    expected = sorted(list(expected))
+    expected = list(EXPECTED_GAMES)
+    if (os.environ.get("OPEN_SPIEL_BUILD_WITH_HANABI", "OFF") == "ON" and
+        "hanabi" not in expected):
+      expected.append("hanabi")
+    if (os.environ.get("OPEN_SPIEL_BUILD_WITH_ACPC", "OFF") == "ON" and
+        "universal_poker" not in expected):
+      expected.append("universal_poker")
+    expected = sorted(expected)
     self.assertCountEqual(game_names, expected)
 
   def teste_default_loadable(self):

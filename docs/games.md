@@ -9,6 +9,7 @@ we verified against known values and/or reproduced results from papers.
 
 Status                                       | Game
 -------------------------------------------- | ----
+<font color="orange"><b>~</b></font>         | [Amazons](#amazons)
 ![](_static/green_circ10.png "green circle") | [Backgammon](#backgammon)
 <font color="orange"><b>~</b></font>         | [Battleship](#battleship)
 <font color="orange"><b>~</b></font>         | [Blackjack](#blackjack)
@@ -65,9 +66,20 @@ Status                                       | Game
 ![](_static/green_circ10.png "green circle") | [Tiny Bridge](#tiny-bridge)
 ![](_static/green_circ10.png "green circle") | [Tiny Hanabi](#tiny-hanabi)
 ![](_static/green_circ10.png "green circle") | [Trade Comm](#trade-comm)
+<font color="orange"><b>~</b></font>         | [Ultimate Tic-Tac-Toe](#ultimate-tic-tac-toe)
 ![](_static/green_circ10.png "green circle") | [Y](#y)
 
 ## Details
+
+### Amazons
+
+*   Move pieces on a board trying to block opponents from moving.
+*   Pieces on a grid.
+*   Modern game.
+*   Deterministic.
+*   Perfect information.
+*   2 players.
+*   [Wikipedia](https://en.wikipedia.org/wiki/Game_of_the_Amazons)
 
 ### Backgammon
 
@@ -528,7 +540,7 @@ Status                                       | Game
 *   Modern game.
 *   Deterministic.
 *   Perfect information.
-*   2-4 players.
+*   2 players.
 *   [Wikipedia](https://en.wikipedia.org/wiki/Quoridor)
 
 ### Reconnaissance Blind Chess
@@ -644,6 +656,15 @@ Status                                       | Game
 *   Imperfect information.
 *   2 players.
 *   A simple emergent communication game based on trading.
+
+### Ultimate Tic-Tac-Toe
+
+*   Players try and form a pattern in local boards and a meta-board.
+*   Uses tokens on a grid.
+*   Deterministic.
+*   Perfect information.
+*   2 players.
+*   [Wikipedia](https://en.wikipedia.org/wiki/Ultimate_tic-tac-toe)
 
 ### Y
 
