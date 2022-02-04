@@ -52,6 +52,7 @@ def main(argv):
 
   game = pyspiel.load_game(FLAGS.game)
   game_type = game.get_type()
+  print(game_type)
 
   if game_type.dynamics == pyspiel.GameType.Dynamics.SIMULTANEOUS:
     logging.warn("%s is not turn-based. Trying to reload game as turn-based.",

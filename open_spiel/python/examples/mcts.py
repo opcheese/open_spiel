@@ -18,6 +18,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from datetime import datetime
 
 import collections
 import random
@@ -28,8 +29,8 @@ from absl import flags
 import numpy as np
 
 from open_spiel.python.algorithms import mcts
-from open_spiel.python.algorithms.alpha_zero import evaluator as az_evaluator
-from open_spiel.python.algorithms.alpha_zero import model as az_model
+#from open_spiel.python.algorithms.alpha_zero import evaluator as az_evaluator
+#from open_spiel.python.algorithms.alpha_zero import model as az_model
 from open_spiel.python.bots import gtp
 from open_spiel.python.bots import human
 from open_spiel.python.bots import uniform_random
@@ -56,7 +57,7 @@ _KNOWN_PLAYERS = [
 
 flags.DEFINE_string("game", "tic_tac_toe", "Name of the game.")
 flags.DEFINE_enum("player1", "mcts", _KNOWN_PLAYERS, "Who controls player 1.")
-flags.DEFINE_enum("player2", "random", _KNOWN_PLAYERS, "Who controls player 2.")
+flags.DEFINE_enum("player2", "mcts", _KNOWN_PLAYERS, "Who controls player 2.")
 flags.DEFINE_string("gtp_path", None, "Where to find a binary for gtp.")
 flags.DEFINE_multi_string("gtp_cmd", [], "GTP commands to run at init.")
 flags.DEFINE_string("az_path", None,
@@ -122,6 +123,11 @@ def _get_action(state, action_str):
       return action
   return None
 
+def _save_state(state_str):
+  now = datetime.now() 
+  nam = "all_states/" + now.strftime("%Y_%m_%d_%H_%M_%S_%f.txt")
+  with open(nam, "w") as text_file:
+    text_file.write(state_str)
 
 def _play_game(game, bots, initial_actions):
   """Plays one game."""
@@ -145,6 +151,8 @@ def _play_game(game, bots, initial_actions):
       bot.inform_action(state, state.current_player(), action)
     state.apply_action(action)
     _opt_print("Forced action", action_str)
+    _save_state("{}".format(state))
+    
     _opt_print("Next state:\n{}".format(state))
 
   while not state.is_terminal():
@@ -175,7 +183,7 @@ def _play_game(game, bots, initial_actions):
         bot.inform_action(state, current_player, action)
     history.append(action_str)
     state.apply_action(action)
-
+    _save_state("{}".format(state))
     _opt_print("Next state:\n{}".format(state))
 
   # Game is now done. Print return for each player

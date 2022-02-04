@@ -78,6 +78,7 @@ EXPECTED_GAMES = set([
     "mfg_crowd_modelling_2d",
     "mfg_garnet",
     "misere",
+    "mnkgame",
     "morpion_solitaire",
     "negotiation",
     "nfg_game",
