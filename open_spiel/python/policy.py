@@ -259,6 +259,7 @@ class TabularPolicy(Policy):
     legal_actions_list = []
     state_in_list = []
     for player in players:
+      tests = 123
       # States are ordered by their history.
       for _, state in sorted(states.items(), key=lambda pair: pair[0]):
         if state.is_simultaneous_node() or player == state.current_player():

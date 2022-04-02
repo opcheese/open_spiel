@@ -219,6 +219,9 @@ class KuhnPokerObserver:
       pieces.append(f"pot[{int(state.pot[0])} {int(state.pot[1])}]")
     if "betting" in self.dict and state.bets:
       pieces.append("".join("pb"[b] for b in state.bets))
+
+    print(state)
+    print(self.dict)
     return " ".join(str(p) for p in pieces)
 
 

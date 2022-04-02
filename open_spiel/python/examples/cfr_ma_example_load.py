@@ -21,27 +21,43 @@ from __future__ import print_function
 from absl import app
 from absl import flags
 
-from open_spiel.python.algorithms import cfr
+from open_spiel.python.algorithms import cfr_ma
 from open_spiel.python.algorithms import exploitability
 import pyspiel
+import open_spiel.python.games.ma_meta_poker
+import numpy as np
+import pickle
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_integer("iterations", 100, "Number of iterations")
-flags.DEFINE_string("game", "python_kuhn_poker", "Name of the game")
-flags.DEFINE_integer("players", 2, "Number of players")
-flags.DEFINE_integer("print_freq", 10, "How often to print the exploitability")
+
 
 
 def main(_):
-  game = pyspiel.load_game(FLAGS.game)
-  cfr_solver = cfr.CFRSolver(game)
+  game = open_spiel.python.games.ma_meta_poker.MaMetaPokerGame()
+  a = None
+  with open('data4_08.pkl', 'rb') as fp:
+     a = pickle.load(fp)
 
-  for i in range(FLAGS.iterations):
-    cfr_solver.evaluate_and_update_policy()
-    if i % FLAGS.print_freq == 0: 
-      conv = exploitability.exploitability(game, cfr_solver.average_policy())
-      print("Iteration {} exploitability {}".format(i, conv))
+  
+
+  state = game.new_initial_state()
+  while not state.is_terminal():
+    info_state_str = state.information_state_string(state.current_player())
+    state_policy = a.policy_for_key(info_state_str)
+    p = np.argmax(state_policy)
+    print(state._action_to_string(state.current_player(),p))
+    print(state_policy)
+    print(state)
+    if state.current_player() == 1:
+        # print(state._legal_actions(state.current_player()))
+        # a1 = int(input())
+        # state._apply_action(a1)
+      state._apply_action(p)
+
+    else:
+      state._apply_action(p)
+    print(state)
 
 
 if __name__ == "__main__":

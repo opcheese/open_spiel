@@ -35,7 +35,7 @@ flags.DEFINE_string("game_name", "kuhn_poker", "Name of the game")
 
 
 def main(unused_argv):
-  logging.info("Loading %s", FLAGS.game_name)
+  logging.info("Loading %s", FLAGS.game_name) 
   game = pyspiel.load_game(FLAGS.game_name)
 
   deep_cfr_solver = deep_cfr.DeepCFRSolver(
