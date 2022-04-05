@@ -30,15 +30,29 @@ import pickle
 
 FLAGS = flags.FLAGS
 
-
+flags.DEFINE_integer("iterations",50, "Number of iterations")
+flags.DEFINE_string("game", "kuhn_poker", "Name of the game")
+flags.DEFINE_integer("players", 3, "Number of players")
+flags.DEFINE_integer("print_freq", 10, "How often to print the exploitability")
 
 
 def main(_):
   game = open_spiel.python.games.ma_meta_poker.MaMetaPokerGame()
-  a = None
-  with open('data4_08.pkl', 'rb') as fp:
-     a = pickle.load(fp)
+  cfr_solver = cfr_ma.CFRSolver(game,strategy_player=2, penalty=0.7 )
 
+  for i in range(FLAGS.iterations):
+    print(i)
+    cfr_solver.evaluate_and_update_policy()
+    if i % FLAGS.print_freq == 0:
+      conv = exploitability.nash_conv(game, cfr_solver.average_policy())
+      print("Iteration {} exploitability {}".format(i, conv))
+  
+  a = cfr_solver.average_policy()
+  with open('data4_07.pkl', 'wb') as fp:
+        pickle.dump(a, fp)
+
+  with open('solver_04_07.pkl', 'wb') as fp:
+        pickle.dump(cfr_solver, fp)
   
 
   state = game.new_initial_state()
@@ -47,12 +61,10 @@ def main(_):
     state_policy = a.policy_for_key(info_state_str)
     p = np.argmax(state_policy)
     print(state._action_to_string(state.current_player(),p))
-    print(state_policy)
     print(state)
     if state.current_player() == 1:
-        # print(state._legal_actions(state.current_player()))
-        # a1 = int(input())
-        # state._apply_action(a1)
+      # a1 = int(input())
+      # state._apply_action(a1)
       state._apply_action(p)
 
     else:
