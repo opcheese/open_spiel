@@ -142,5 +142,5 @@ def get_all_states(game,
 
   if not all_states:
     raise ValueError("GetSubgameStates returned 0 states!")
-
+  print("all state length:" + str(len(all_states)))
   return all_states

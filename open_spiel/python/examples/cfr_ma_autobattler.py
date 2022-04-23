@@ -25,16 +25,17 @@ from open_spiel.python.algorithms import cfr
 from open_spiel.python.algorithms import exploitability
 import pyspiel
 import open_spiel.python.games.ma_autobattler_poker
+
 import numpy as np
 import pickle
 import random
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_integer("iterations",100, "Number of iterations")
+flags.DEFINE_integer("iterations",5, "Number of iterations")
 flags.DEFINE_string("game", "kuhn_poker", "Name of the game")
-flags.DEFINE_integer("players", 3, "Number of players")
-flags.DEFINE_integer("print_freq", 10, "How often to print the exploitability")
+flags.DEFINE_integer("players", 2, "Number of players")
+flags.DEFINE_integer("print_freq", 1, "How often to print the exploitability")
 import logging
 
 # create logger
@@ -57,9 +58,11 @@ consoleHandler.setFormatter(formatter)
 #logger.addHandler(consoleHandler)
 
 def main(_):
-  game = open_spiel.python.games.ma_autobattler_poker.MaAutobattlerGame()
-  cfr_solver = cfr.CFRSolver(game)
-
+  game = open_spiel.python.games.ma_autobattler_poker.MaAutobattlerGame({"rules":1})
+  cfr_solver = cfr.CFRPlusSolver(game)
+  
+  with open('autobattler_solver_pre_16_1.pkl', 'wb') as fp:
+        pickle.dump(cfr_solver, fp)
   for i in range(FLAGS.iterations):
     print(i)
     cfr_solver.evaluate_and_update_policy()
@@ -68,15 +71,17 @@ def main(_):
       print("Iteration {} exploitability {}".format(i, conv))
   
   a = cfr_solver.average_policy()
-  with open('autobattler.pkl', 'wb') as fp:
+  with open('autobattler_16_1.pkl', 'wb') as fp:
         pickle.dump(a, fp)
 
-  with open('autobattler.pkl', 'wb') as fp:
+  with open('autobattler_solver_16_1.pkl', 'wb') as fp:
         pickle.dump(cfr_solver, fp)
 
   a1 = 0
   a2 = 0  
-  for i in range(250):
+  logger.setLevel(logging.DEBUG)
+
+  for i in range(10):
     state = game.new_initial_state()
     while not state.is_terminal():
       if state.current_player() == pyspiel.PlayerId.CHANCE:

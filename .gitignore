@@ -60,3 +60,5 @@ Package.resolved
 open_spiel/.vs
 
 open_spiel/python/examples/all_states
+*.pkl
+*.pickle

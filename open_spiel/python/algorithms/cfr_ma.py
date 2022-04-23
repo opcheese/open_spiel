@@ -502,12 +502,13 @@ class CFRPlusSolver(_CFRSolver):
   ```
   """
 
-  def __init__(self, game):
+  def __init__(self, game,strategy_player,penalty):
     super(CFRPlusSolver, self).__init__(
         game,
         regret_matching_plus=True,
         alternating_updates=True,
-        linear_averaging=True)
+        linear_averaging=True, 
+        penalty = penalty,strategy_player=strategy_player)
 
 
 class CFRSolver(_CFRSolver):

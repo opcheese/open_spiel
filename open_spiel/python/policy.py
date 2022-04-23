@@ -258,10 +258,15 @@ class TabularPolicy(Policy):
     self.states = []
     legal_actions_list = []
     state_in_list = []
+    abc = 0
+    bcd = 0
     for player in players:
       # States are ordered by their history.
       for _, state in sorted(states.items(), key=lambda pair: pair[0]):
-        if state.is_simultaneous_node() or player == state.current_player():
+
+        #if state.is_simultaneous_node() or player == state.current_player():
+        if  player == state.current_player():
+          
           legal_actions = state.legal_actions_mask(player)
           if any(legal_actions):
             key = self._state_key(state, player)

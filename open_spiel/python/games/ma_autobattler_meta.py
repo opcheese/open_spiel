@@ -27,6 +27,7 @@ works with that. It is likely to be poor if the algorithm relies on processing
 and updating states as it goes, e.g. MCTS.
 """
 
+from cmath import pi
 import enum
 
 import numpy as np
@@ -66,7 +67,34 @@ for i in range(c85):
         #print(tupl)
 
 all_deals_ind = np.arange(len(all_deals)) 
-    
+
+perms = list(np.arange(4)+1)
+ability_orders  = list(itertools.permutations(perms,4))
+#manual
+# ability_orders = [[0,1,2,3],
+# [1,2,3,4],
+# [4,3,2,1],
+# [2,3,4,1],
+# [3,1,2,3],
+# [2,2,1,4],
+# [4,2,2,1],
+# [1,3,4,1]
+# ]
+#ability_orders = ability_orders[:12]
+#print(ability_orders)
+
+def genStats(ability_order):
+    one_stats = {}
+    for i in range(8):
+        one_stats[i] = [i%4+1,ability_order[i%len(ability_order)],i//4]
+    return one_stats
+
+all_stats = {}
+for i in range(len(ability_orders)):
+    all_stats[i] = genStats(ability_orders[i])
+
+
+all_stats_indx = list(np.arange(len(all_stats)))
 
 class Card():
     def __init__(self, stat, ability,suit,side_num):
@@ -281,7 +309,8 @@ class GameEngine():
         elif len(self.board_state.left_side) < len(self.board_state.right_side):
             return 1 #right winner
         else:
-            return 0 #draw
+          #print("draw")
+          return 0 #draw
     
     def main_loop(self):
 
@@ -330,22 +359,12 @@ Ability_List.append(TokenAbility())
 Ability_List.append(EaterAbility())
 Ability_List.append(FighterAbility())
 
-stats ={
-    0:[1,0,0],
-    1:[2,1,0],
-    2:[3,2,0],
-    3:[4,3,0],
-    4:[1,4,1],
-    5:[2,0,1],
-    6:[3,1,1],
-    7:[4,2,1],
-}
 
 
-_NUM_PLAYERS = 2
+_NUM_PLAYERS = 3
 _GAME_TYPE = pyspiel.GameType(
-    short_name="python_autobattler",
-    long_name="Python Autobattler",
+    short_name="python_autobattler_meta",
+    long_name="Python Autobattler Meta",
     dynamics=pyspiel.GameType.Dynamics.SEQUENTIAL,
     chance_mode=pyspiel.GameType.ChanceMode.EXPLICIT_STOCHASTIC,
     information=pyspiel.GameType.Information.IMPERFECT_INFORMATION,
@@ -359,7 +378,7 @@ _GAME_TYPE = pyspiel.GameType(
     provides_observation_tensor=True,
     provides_factored_observation_string=True)
 _GAME_INFO = pyspiel.GameInfo(
-    num_distinct_actions=3,
+    num_distinct_actions=len(all_stats),
     max_chance_outcomes=len(all_deals),
     num_players=_NUM_PLAYERS,
     min_utility=-1.0,
@@ -368,11 +387,12 @@ _GAME_INFO = pyspiel.GameInfo(
     max_game_length=1)  # e.g. Pass, Bet, Bet
 
 
-class MaAutobattlerGame(pyspiel.Game):
+class MaAutobattlerGameMeta(pyspiel.Game):
   """A Python version of Kuhn poker."""
 
   def __init__(self, params=None):
     super().__init__(_GAME_TYPE, _GAME_INFO, params or dict())
+    self.total_cards = TOTAL_CARDS
 
   def new_initial_state(self):
     """Returns a state corresponding to the start of a game."""
@@ -391,13 +411,15 @@ class MaAutobattlerState(pyspiel.State):
   def __init__(self, game):
     """Constructor; should only be called by Game.new_initial_state."""
     super().__init__(game)
+    self.stats = None   
     self.left_cards = []
     self.right_cards = []
     self._game_over = False
-    self.stage = 0
-    self.game_res = [0,0]
+    self.stage = -1
+    self.game_res = [0,0,0]
     self.left_discard = -1
     self.right_discard = -1
+    self.stats_ind = -1
 
 
   # OpenSpiel (PySpiel) API functions are below. This is the standard set that
@@ -407,6 +429,8 @@ class MaAutobattlerState(pyspiel.State):
     """Returns id of the next player to move, or TERMINAL if game is over."""
     if self._game_over:
       return pyspiel.PlayerId.TERMINAL
+    elif self.stage==-1:
+      return 2;
     elif self.stage == 0:
       return pyspiel.PlayerId.CHANCE
     elif self.stage==3:
@@ -414,14 +438,37 @@ class MaAutobattlerState(pyspiel.State):
     elif self.stage == 1:
       return 0
     elif self.stage == 2:
-      return 0
+      return 1
     else:
       raise Exception('strange stage')
+
 
   def _legal_actions(self, player):
     """Returns a list of legal actions, sorted in ascending order."""
     assert player >= 0
-    return [0,1,2]
+    if self._game_over:
+      return 0
+    elif self.stage==-1:
+      if player == 2:
+        return all_stats_indx
+      else:
+        return []
+    elif self.stage == 0:
+      return []
+    elif self.stage==3:
+      return []
+    elif self.stage == 1:
+       if player == 0:
+           return [0,1,2]
+       else:
+          return []
+    elif self.stage == 2:
+       if player == 1:
+           return [0,1,2]
+       else:
+          return []
+    else:
+      raise Exception("Wrong state!!!")
 
   def chance_outcomes(self):
     """Returns the possible chance outcomes and their probabilities."""
@@ -433,9 +480,37 @@ class MaAutobattlerState(pyspiel.State):
     p = 1.0 / len(outcomes)
     return [(o, p) for o in outcomes]
 
+  def action_to_card(self,action,player):
+    res = -1
+    if player == 0:
+      res = self.left_cards[action]
+    elif player == 1:
+      res = self.right_cards[action]
+    return res
+
+  
+  def policy_to_cards(self,policy,player):
+    res = np.zeros(TOTAL_CARDS)
+    for ind,prob in enumerate(policy[0:3]):
+      card = self.action_to_card(ind,player)
+      res[card] = prob
+    return res
+
+  
+
+
   def _apply_action(self, action):
     """Applies the specified action to the state."""
     logger.debug("stage is {}, applying {}".format(self.stage,action))
+    
+    if self.stage == -1:
+      self.stats = all_stats[action]
+      self.stats_ind = action
+      if action not in Cache:
+        Cache[action] = {}
+      self.stage = 0
+      return
+
     if self.stage == 0:
       deal = all_deals[action]
       self.left_cards = deal[0]
@@ -471,21 +546,25 @@ class MaAutobattlerState(pyspiel.State):
     #the game
     key = str(self.left_cards) + " " + str(self.right_cards)
     logger.debug(str(self.left_cards) + " " + str(self.right_cards))
-    if key in Cache:
-      res = Cache[key]
+    if key in Cache[self.stats_ind]:
+      res = Cache[self.stats_ind][key]
       if res ==-1:
         self.game_res = [1,-1]
-      else:
+      elif res == 1:
         self.game_res = [-1,1]  
+      else:
+        self.game_res = [0,0] 
     else:
-      ge = GameEngine(self.left_cards,self.right_cards,stats)
+      ge = GameEngine(self.left_cards,self.right_cards,self.stats)
       ge.main_loop()
       res = ge.return_winner()
-      Cache[key] = res
+      Cache[self.stats_ind][key] = res
       if res ==-1:
         self.game_res = [1,-1]
-      else:
+      elif res == 1:
         self.game_res = [-1,1]  
+      else:
+        self.game_res = [0,0]
     
     self._game_over = True
 
@@ -493,7 +572,8 @@ class MaAutobattlerState(pyspiel.State):
 
   def _action_to_string(self, player, action):
     """Action -> string."""
-    
+    if self.stage == -1:
+      return str(all_stats[action])
     if self.stage == 0:
       return str(all_deals[action])
     elif self.stage==3:
@@ -523,7 +603,13 @@ class MaAutobattlerState(pyspiel.State):
     return self._game_over
 
   def returns(self):
-    return self.game_res
+    meta_score = -1
+    if self.game_res[0] != 0:
+      meta_score = 1
+    else:
+      abc = 4
+    res = [self.game_res[0],self.game_res[1],meta_score]
+    return res
 
   def __str__(self):
     """String for debug purposes. No particular semantics are required."""
@@ -539,12 +625,15 @@ class MaAutobattlerObserver:
       raise ValueError(f"Observation parameters not supported; passed {params}")
 
     # Determine which observation pieces we want to include.
-    pieces = [("player", 2, (2,))]
+    pieces = [("player", 3, (3,))]
     if iig_obs_type.private_info == pyspiel.PrivateInfoType.SINGLE_PLAYER:
       pieces.append(("hand", 8, (8,)))
       pieces.append(("discard", 8, (8,)))
 
-    # if iig_obs_type.public_info:
+    if iig_obs_type.public_info:
+       pieces.append(("stats", len(all_stats), (len(all_stats),)))
+       pieces.append(("cur_stage", 5, (5,)))
+       
     #   if iig_obs_type.perfect_recall:
     #     pieces.append(("betting", 6, (3, 2)))
     #   else:
@@ -566,23 +655,26 @@ class MaAutobattlerObserver:
     self.tensor.fill(0)
     if "player" in self.dict:
       self.dict["player"][player] = 1
+    if "stats" in self.dict:
+      self.dict["stats"][state.stats_ind] = 1
+    if "cur_stage" in self.dict:
+      self.dict["cur_stage"][state.stage+1] = 1
     if "hand" in self.dict:
       if player == 0:
         for card in state.left_cards:
           self.dict["hand"][card] = 1
       elif player == 1:
-         for card in state.left_cards:
+         for card in state.right_cards:
           self.dict["hand"][card] = 1
-      else:
-        raise Exception("Strange state")
+     
     
     if "discard" in self.dict:
       if player == 0:
         self.dict["discard"][state.left_discard] = 1
       elif player == 1:
         self.dict["discard"][state.right_discard] = 1
-      else:
-        raise Exception("Strange state 2")
+      # else:
+      #   raise Exception("Strange state 2")
 
     
    
@@ -592,16 +684,21 @@ class MaAutobattlerObserver:
     pieces = []
     if "player" in self.dict:
       pieces.append(f"p{player}")
+    if "stats" in self.dict:
+      pieces.append(f"stat:{state.stats_ind}")
+    if "cur_stage" in self.dict:
+      pieces.append(f"stage:{state.stage}")
+
     if "hand" in self.dict:
       if player == 0:
         pieces.append(f"hand:{state.left_cards}")
-      else:
+      elif player == 1:
         pieces.append(f"hand:{state.right_cards}")
     if "discard" in self.dict:
-      if player == 0:
-        pieces.append(f"hand:{state.left_discard}")
-      else:
-        pieces.append(f"hand:{state.right_discard}")
+      if player == 1:
+        pieces.append(f"discard:{state.left_discard}")
+      elif player == 1:
+        pieces.append(f"discard:{state.right_discard}")
     #print(state)
     #print(self.dict)
     return " ".join(str(p) for p in pieces)
@@ -609,4 +706,4 @@ class MaAutobattlerObserver:
 
 # Register the game with the OpenSpiel library
 
-pyspiel.register_game(_GAME_TYPE, MaAutobattlerGame)
+pyspiel.register_game(_GAME_TYPE, MaAutobattlerGameMeta)

@@ -41,9 +41,12 @@ logger = logging.getLogger("somelogger")
 
 Cache = {}
 ### initiate deals
-cards = list(np.arange(8))
+TOTAL_CARDS = 14
 HAND_SIZE = 3
-TOTAL_CARDS = 8
+SUIT_NUMBER=2
+
+CARDS_PER_SUIT = int(TOTAL_CARDS/SUIT_NUMBER)
+cards = list(np.arange(TOTAL_CARDS))
 c85 = math.comb(TOTAL_CARDS,HAND_SIZE)
 c53 = math.comb(TOTAL_CARDS - HAND_SIZE,HAND_SIZE)
 total_combinations = c85*c53
@@ -66,6 +69,25 @@ for i in range(c85):
         #print(tupl)
 
 all_deals_ind = np.arange(len(all_deals)) 
+card_types = list(np.arange(TOTAL_CARDS/SUIT_NUMBER, dtype=int))
+powered_cards_list = list(itertools.permutations(card_types,4))
+def genStats(ability_order):
+    one_stats = {}
+    for i in range(int(TOTAL_CARDS/SUIT_NUMBER)):
+        for j in range(SUIT_NUMBER):
+            one_stats[i*SUIT_NUMBER +j ] = [i%CARDS_PER_SUIT+1,ability_order[i],j]
+    return one_stats
+
+all_stats = {}
+one_suit = int(TOTAL_CARDS/SUIT_NUMBER)
+
+for main_ind,power_list in enumerate(powered_cards_list):
+    ability_orders = [0] * one_suit
+    
+    for ind,power in enumerate(power_list):
+        ability_orders[power] = ind+1
+    all_stats[main_ind] = genStats(ability_orders)
+
     
 
 class Card():
@@ -330,17 +352,9 @@ Ability_List.append(TokenAbility())
 Ability_List.append(EaterAbility())
 Ability_List.append(FighterAbility())
 
-stats ={
-    0:[1,0,0],
-    1:[2,1,0],
-    2:[3,2,0],
-    3:[4,3,0],
-    4:[1,4,1],
-    5:[2,0,1],
-    6:[3,1,1],
-    7:[4,2,1],
+_DEFAULT_PARAMS = {
+    "rules": 0
 }
-
 
 _NUM_PLAYERS = 2
 _GAME_TYPE = pyspiel.GameType(
@@ -357,7 +371,8 @@ _GAME_TYPE = pyspiel.GameType(
     provides_information_state_tensor=True,
     provides_observation_string=True,
     provides_observation_tensor=True,
-    provides_factored_observation_string=True)
+    provides_factored_observation_string=True,
+    parameter_specification=_DEFAULT_PARAMS)
 _GAME_INFO = pyspiel.GameInfo(
     num_distinct_actions=3,
     max_chance_outcomes=len(all_deals),
@@ -373,10 +388,11 @@ class MaAutobattlerGame(pyspiel.Game):
 
   def __init__(self, params=None):
     super().__init__(_GAME_TYPE, _GAME_INFO, params or dict())
-
+    self.rules = params["rules"]
+    self.total_cards = TOTAL_CARDS
   def new_initial_state(self):
     """Returns a state corresponding to the start of a game."""
-    return MaAutobattlerState(self)
+    return MaAutobattlerState(self,self.rules)
 
   def make_py_observer(self, iig_obs_type=None, params=None):
     """Returns an object used for observing game state."""
@@ -388,7 +404,7 @@ class MaAutobattlerGame(pyspiel.Game):
 class MaAutobattlerState(pyspiel.State):
   """A python version of the Kuhn poker state."""
 
-  def __init__(self, game):
+  def __init__(self, game, rules):
     """Constructor; should only be called by Game.new_initial_state."""
     super().__init__(game)
     self.left_cards = []
@@ -396,6 +412,7 @@ class MaAutobattlerState(pyspiel.State):
     self._game_over = False
     self.stage = 0
     self.game_res = [0,0]
+    self.stats = all_stats[rules]
     self.left_discard = -1
     self.right_discard = -1
 
@@ -414,7 +431,7 @@ class MaAutobattlerState(pyspiel.State):
     elif self.stage == 1:
       return 0
     elif self.stage == 2:
-      return 0
+      return 1
     else:
       raise Exception('strange stage')
 
@@ -478,7 +495,7 @@ class MaAutobattlerState(pyspiel.State):
       else:
         self.game_res = [-1,1]  
     else:
-      ge = GameEngine(self.left_cards,self.right_cards,stats)
+      ge = GameEngine(self.left_cards,self.right_cards,self.stats)
       ge.main_loop()
       res = ge.return_winner()
       Cache[key] = res
@@ -489,6 +506,24 @@ class MaAutobattlerState(pyspiel.State):
     
     self._game_over = True
 
+  def action_to_card(self,action,player):
+    res = -1
+    if player == 0:
+      res = self.left_cards[action]
+    elif player == 1:
+      res = self.right_cards[action]
+    return res
+
+  
+  def policy_to_cards(self,policy,player):
+    res = np.zeros(TOTAL_CARDS)
+    policy_list = []
+    for key in policy:
+      policy_list.append(policy[key])
+    for ind,prob in enumerate(policy_list[0:3]):
+      card = self.action_to_card(ind,player)
+      res[card] = prob
+    return res
   
 
   def _action_to_string(self, player, action):
@@ -541,8 +576,8 @@ class MaAutobattlerObserver:
     # Determine which observation pieces we want to include.
     pieces = [("player", 2, (2,))]
     if iig_obs_type.private_info == pyspiel.PrivateInfoType.SINGLE_PLAYER:
-      pieces.append(("hand", 8, (8,)))
-      pieces.append(("discard", 8, (8,)))
+      pieces.append(("hand", TOTAL_CARDS, (TOTAL_CARDS,)))
+      pieces.append(("discard", TOTAL_CARDS, (TOTAL_CARDS,)))
 
     # if iig_obs_type.public_info:
     #   if iig_obs_type.perfect_recall:
@@ -571,7 +606,7 @@ class MaAutobattlerObserver:
         for card in state.left_cards:
           self.dict["hand"][card] = 1
       elif player == 1:
-         for card in state.left_cards:
+         for card in state.right_cards:
           self.dict["hand"][card] = 1
       else:
         raise Exception("Strange state")

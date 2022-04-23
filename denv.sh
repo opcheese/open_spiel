@@ -1,0 +1,3 @@
+export AWS_ACCESS_KEY_ID=minio
+export AWS_SECRET_ACCESS_KEY=minio123
+echo $AWS_ACCESS_KEY_ID

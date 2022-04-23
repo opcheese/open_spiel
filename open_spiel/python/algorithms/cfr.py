@@ -345,6 +345,10 @@ class _CFRSolverBase(object):
     info_state_node = self._info_state_nodes[info_state_str]
     prob_vec = self._current_policy.action_probability_array[
         info_state_node.index_in_tabular_policy]
+    for action in info_state_node.legal_actions:
+      if action>=len(prob_vec):
+        print('bug')
+
     return {
         action: prob_vec[action] for action in info_state_node.legal_actions
     }
@@ -429,6 +433,8 @@ class _CFRSolver(_CFRSolverBase):
             policies=None,
             reach_probabilities=np.ones(self._game.num_players() + 1),
             player=player)
+        if player == 2:
+          wer =5
         if self._regret_matching_plus:
           _apply_regret_matching_plus_reset(self._info_state_nodes)
         _update_current_policy(self._current_policy, self._info_state_nodes)
