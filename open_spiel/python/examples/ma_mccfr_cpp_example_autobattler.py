@@ -45,9 +45,9 @@ flags.DEFINE_integer("iterations", 50, "Number of iterations")
 flags.DEFINE_string("game", "kuhn_poker", "Name of the game")
 flags.DEFINE_integer("players", 2, "Number of players")
 
-MODEL_FILE_NAME = "{}_sampling_mccfr_solver_autobattler_s_{}_20000.pickle"
+MODEL_FILE_NAME = "{}_sampling_mccfr_solver_autobattler_s_{}_{}.pickle"
 
-itertaions = 20000
+itertaions = 100000
 key_step = 500
 
 def run_iterations(game, solver, start_iteration=0):
@@ -81,7 +81,7 @@ def main(_):
   game1 = pyspiel.load_game(
       "python_kuhn_poker"
   )
-  for i in range(374,800):
+  for i in range(500,502):
     game = open_spiel.python.games.ma_autobattler_poker.MaAutobattlerGame({"rules":i})
     FLAGS.sampling = "external"
     if FLAGS.sampling == "external":
@@ -93,7 +93,7 @@ def main(_):
     run_iterations(game, solver)
 
     print("Persisting the model...")
-    with open(MODEL_FILE_NAME.format(FLAGS.sampling,i), "wb") as file:
+    with open(MODEL_FILE_NAME.format(FLAGS.sampling,i,itertaions), "wb") as file:
       pickle.dump(solver, file, pickle.HIGHEST_PROTOCOL)
 
 

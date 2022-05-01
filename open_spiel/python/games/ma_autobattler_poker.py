@@ -393,6 +393,11 @@ class MaAutobattlerGame(pyspiel.Game):
   def new_initial_state(self):
     """Returns a state corresponding to the start of a game."""
     return MaAutobattlerState(self,self.rules)
+  
+  def rules_to_str(self):
+    res = ""
+    res = str(all_stats[self.rules])
+    return res
 
   def make_py_observer(self, iig_obs_type=None, params=None):
     """Returns an object used for observing game state."""
@@ -488,7 +493,7 @@ class MaAutobattlerState(pyspiel.State):
     #the game
     key = str(self.left_cards) + " " + str(self.right_cards)
     logger.debug(str(self.left_cards) + " " + str(self.right_cards))
-    if key in Cache:
+    if False and key in Cache:
       res = Cache[key]
       if res ==-1:
         self.game_res = [1,-1]
