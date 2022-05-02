@@ -41,7 +41,7 @@ logger = logging.getLogger("somelogger")
 
 Cache = {}
 ### initiate deals
-TOTAL_CARDS = 14
+TOTAL_CARDS = 12
 HAND_SIZE = 3
 SUIT_NUMBER=2
 
@@ -52,6 +52,7 @@ c53 = math.comb(TOTAL_CARDS - HAND_SIZE,HAND_SIZE)
 total_combinations = c85*c53
 first_hands = itertools.combinations(cards,3)
 list_first_hand = list(first_hands)
+
 
 def get_second_hands(one_first_hand):
     cards_left = [item for item in cards if item not in one_first_hand]
@@ -70,7 +71,7 @@ for i in range(c85):
 
 all_deals_ind = np.arange(len(all_deals)) 
 card_types = list(np.arange(TOTAL_CARDS/SUIT_NUMBER, dtype=int))
-powered_cards_list = list(itertools.permutations(card_types,4))
+powered_cards_list = list(itertools.permutations(card_types,5))
 def genStats(ability_order):
     one_stats = {}
     for i in range(int(TOTAL_CARDS/SUIT_NUMBER)):
@@ -167,6 +168,24 @@ class EaterAbility(BasicAbility):
         res =  type(self).__name__
         return res
 
+class GrowerAbility(BasicAbility):
+    def __init__(self):
+        pass
+    
+    def debut(self,state,side_num,card):
+        side =  state.left_side if side_num ==0 else state.right_side
+        while len(side) > 0:
+            for old_card in side:
+                if card.stat == old_card.stat:
+                    card.stat+=old_card.stat+2
+                state.kill_card(old_card)
+        state.clean_up()
+        
+
+
+    def __str__(self):
+        res =  type(self).__name__
+        return res
 
 class FighterAbility(BasicAbility):
     def __init__(self):
@@ -188,9 +207,6 @@ class MartyrdomAbility(BasicAbility):
            state.kill_card(card)
         state.clean_up()
 
-    # def __str__(self):
-    #     return super().__str__()
-
 class TokenAbility(BasicAbility):
     def __init__(self):
         pass
@@ -199,7 +215,6 @@ class TokenAbility(BasicAbility):
         side =  state.left_side if side_num ==0 else state.right_side
         token = state.create_card(1,0,card.suit)
         state.add_card(token,side_num)
-
 
 class BoardState():
     def __init__(self):
@@ -343,7 +358,6 @@ class GameEngine():
             
             logger.debug("--after ---" + str(self.board_state))
 
-  
 
 Ability_List = []
 Ability_List.append(BasicAbility())
@@ -351,6 +365,8 @@ Ability_List.append(MartyrdomAbility())
 Ability_List.append(TokenAbility())
 Ability_List.append(EaterAbility())
 Ability_List.append(FighterAbility())
+Ability_List.append(GrowerAbility())
+
 
 _DEFAULT_PARAMS = {
     "rules": 0
@@ -396,7 +412,15 @@ class MaAutobattlerGame(pyspiel.Game):
   
   def rules_to_str(self):
     res = ""
-    res = str(all_stats[self.rules])
+    tmp = all_stats[self.rules]
+    for k in tmp:
+      val = tmp[k]
+      if val[2] == 0: 
+        ability = str(Ability_List[val[1]])
+        st = str(val[0])
+        res_str = "||{}:{} {}||".format(k//2,st,ability)
+        res+=res_str
+    #res = str(all_stats[self.rules])
     return res
 
   def make_py_observer(self, iig_obs_type=None, params=None):
@@ -650,3 +674,19 @@ class MaAutobattlerObserver:
 # Register the game with the OpenSpiel library
 
 pyspiel.register_game(_GAME_TYPE, MaAutobattlerGame)
+
+if __name__ == "__main__":
+
+ 
+  game = MaAutobattlerGame({"rules":0})
+
+  state = game.new_initial_state()
+  while not state.is_terminal():
+    if state.current_player() == pyspiel.PlayerId.CHANCE:
+      lc = state.chance_outcomes()
+      c = lc[0][0]
+      state._apply_action(c)
+    else:
+      la = state._legal_actions(state.current_player())
+      a = la[0]
+      state._apply_action(a)

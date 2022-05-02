@@ -116,7 +116,7 @@ def main(_):
     a1 = 0
     a2 = 0
     a0 = 0
-    total_game_number = 500
+    total_game_number = max_chance_outcomes
     log_meta = True
     step = 0.05  
 
@@ -145,7 +145,9 @@ def main(_):
         mlflow.log_param("alpha", alpha)
         mlflow.log_param("log_path", log_path)
         mlflow.log_param("random", play_random)
-        mlflow.log_param("rules", game.rules_to_str())
+        rul_str =  game.rules_to_str()
+        #print(rul_str)
+        mlflow.log_param("rules",rul_str)
         logger.debug("game rules:{}".format(game.rules_to_str()))
 
         mlflow.log_param("filename", file_name)

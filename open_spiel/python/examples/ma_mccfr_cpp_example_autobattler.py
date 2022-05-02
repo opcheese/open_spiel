@@ -45,9 +45,9 @@ flags.DEFINE_integer("iterations", 50, "Number of iterations")
 flags.DEFINE_string("game", "kuhn_poker", "Name of the game")
 flags.DEFINE_integer("players", 2, "Number of players")
 
-MODEL_FILE_NAME = "{}_sampling_mccfr_solver_autobattler_s_{}_{}.pickle"
+MODEL_FILE_NAME = "{}_sampling_mccfr_solver_autobattler_new_{}_{}.pickle"
 
-itertaions = 100000
+itertaions = 50000
 key_step = 500
 
 def run_iterations(game, solver, start_iteration=0):
@@ -81,7 +81,7 @@ def main(_):
   game1 = pyspiel.load_game(
       "python_kuhn_poker"
   )
-  for i in range(500,502):
+  for i in range(0,1000,50):
     game = open_spiel.python.games.ma_autobattler_poker.MaAutobattlerGame({"rules":i})
     FLAGS.sampling = "external"
     if FLAGS.sampling == "external":
