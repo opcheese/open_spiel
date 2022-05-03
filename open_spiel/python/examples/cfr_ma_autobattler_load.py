@@ -90,7 +90,7 @@ def main(_):
 
   experiments_path = "/home/kirill/Experiments/"
   base_pickle_path = "/home/kirill/myspiel"
-  for file in glob.glob(base_pickle_path+"/"+"external_sampling_mccfr_solver_autobattler_s_*.pickle"):
+  for file in glob.glob(base_pickle_path+"/"+"external_sampling_mccfr_solver_autobattler_6powers_*.pickle"):
     parsed_name = parse_filename(file)
     if not parsed_name["ok"] or parsed_name["rules"] not in open_spiel.python.games.ma_autobattler_poker.all_stats or parsed_name["iter"]<10000:
       continue
@@ -153,90 +153,92 @@ def main(_):
         mlflow.log_param("filename", file_name)
         print("Max chance outcome:{}", max_chance_outcomes)
         for i in tqdm(range(max_chance_outcomes)):
-          state = game.new_initial_state()
-          while not state.is_terminal():
-            #if state.current_player() == pyspiel.PlayerId.CHANCE:
-            if state.stage == 0:
-              state._apply_action(i)
-            elif state.current_player() == pyspiel.PlayerId.CHANCE:
-              outomes = state.chance_outcomes()
-              l = random.choice(outomes)
-              state._apply_action(l)
+          for chance in range(4):
+            state = game.new_initial_state()
+            while not state.is_terminal():
+              #if state.current_player() == pyspiel.PlayerId.CHANCE:
+              if state.stage == 0:
+                state._apply_action(i)
+              elif state.current_player() == pyspiel.PlayerId.CHANCE:
+                #outomes = state.chance_outcomes()
+                #l = random.choice(outomes)
+                l = chance
+                state._apply_action(l)
 
-            else :
-              info_state_str = state.information_state_string(state.current_player())
-              #state_policy = a.policy_for_key(info_state_str)
-              state_policy = a.action_probabilities(state)
-              
-              logger.debug(state_policy)
-
-              p = np.argmax(state_policy)
-              p_minus = np.argmin(state_policy)
-              if log_meta:
-                #meta_str =  str(state_policy)
-              
-                #mlflow.log_metric("meta_str",state_policy )
-                log_meta = False  
-              #print(state._action_to_string(state.current_player(),p))
-              #print(state)
-              if state.current_player() == 1 or state.current_player() == 0:
-                # a1 = int(input())
-                # state._apply_action(a1)
-
-                min_p = min(state_policy)
-                max_p = max(state_policy)
-                if min_p < eps_useless:
-                  one_useless+=1
+              else :
+                info_state_str = state.information_state_string(state.current_player())
+                #state_policy = a.policy_for_key(info_state_str)
+                state_policy = a.action_probabilities(state)
                 
-                if max_p > 1.0-eps_useless:
-                  no_choice+=1
-                
-                if abs(state_policy[0] - all_eq_val) < eps_useless:
-                  all_equal+=1
+                logger.debug(state_policy)
 
-                card = state.action_to_card(p,state.current_player())
-                card_counter_discarded[card]+=1
-                card_policy = state.policy_to_cards(state_policy,state.current_player())
+                p = np.argmax(state_policy)
+                p_minus = np.argmin(state_policy)
+                if log_meta:
+                  #meta_str =  str(state_policy)
                 
-                # if card_policy[0] >0 and card_policy[4]>0:
-                #   print(card_policy)
-                tf = pd.DataFrame([card_policy])
-                df = df.append(tf)
-                for ind in range(3):
-                  if ind!=p:
-                    card = state.action_to_card(ind,state.current_player())
-                    card_counter_kept[card]+=1
-                    if  card ==0 or  card == 4:
-                      pass
-                      #print(state)
-                      #print(p)
-                #af = len(el<eps_useless for el in state_policy)
-                
-                if not play_random or state.current_player() == 0:
-                  state._apply_action(p)
+                  #mlflow.log_metric("meta_str",state_policy )
+                  log_meta = False  
+                #print(state._action_to_string(state.current_player(),p))
+                #print(state)
+                if state.current_player() == 1 or state.current_player() == 0:
+                  # a1 = int(input())
+                  # state._apply_action(a1)
 
-                elif play_worst:
-                  state._apply_action(p_minus)
+                  min_p = min(state_policy)
+                  max_p = max(state_policy)
+                  if min_p < eps_useless:
+                    one_useless+=1
                   
+                  if max_p > 1.0-eps_useless:
+                    no_choice+=1
+                  
+                  if abs(state_policy[0] - all_eq_val) < eps_useless:
+                    all_equal+=1
+
+                  card = state.action_to_card(p,state.current_player())
+                  card_counter_discarded[card]+=1
+                  card_policy = state.policy_to_cards(state_policy,state.current_player())
+                  
+                  # if card_policy[0] >0 and card_policy[4]>0:
+                  #   print(card_policy)
+                  tf = pd.DataFrame([card_policy])
+                  df = df.append(tf)
+                  for ind in range(3):
+                    if ind!=p:
+                      card = state.action_to_card(ind,state.current_player())
+                      card_counter_kept[card]+=1
+                      if  card ==0 or  card == 4:
+                        pass
+                        #print(state)
+                        #print(p)
+                  #af = len(el<eps_useless for el in state_policy)
+                  
+                  if not play_random or state.current_player() == 0:
+                    state._apply_action(p)
+
+                  elif play_worst:
+                    state._apply_action(p_minus)
+                    
+                  else:
+                    la = state._legal_actions( state.current_player() )
+                    ra = random.choice(la)
+                    state._apply_action(ra)
+
                 else:
-                  la = state._legal_actions( state.current_player() )
-                  ra = random.choice(la)
-                  state._apply_action(ra)
+                  state._apply_action(p)
+              #print(state)
+            game_res = state.game_res[0]
+            logger.debug("Game result:{}".format(game_res))
 
-              else:
-                state._apply_action(p)
-            #print(state)
-          game_res = state.game_res[0]
-          logger.debug("Game result:{}".format(game_res))
-
-          if game_res == 1:
-            a1+= 1
-          elif game_res == -1:
-            a2+= 1
-          elif game_res == 0:
-            a0 +=1
-          else:
-            raise("value is {}".format(game_res)) 
+            if game_res == 1:
+              a1+= 1
+            elif game_res == -1:
+              a2+= 1
+            elif game_res == 0:
+              a0 +=1
+            else:
+              raise("value is {}".format(game_res)) 
         #print(a1,a2)
         mlflow.log_metric("a1", a1)
         mlflow.log_metric("a2", a2)

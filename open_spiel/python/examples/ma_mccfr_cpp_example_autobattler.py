@@ -45,7 +45,7 @@ flags.DEFINE_integer("iterations", 50, "Number of iterations")
 flags.DEFINE_string("game", "kuhn_poker", "Name of the game")
 flags.DEFINE_integer("players", 2, "Number of players")
 
-MODEL_FILE_NAME = "{}_sampling_mccfr_solver_autobattler_new_{}_{}.pickle"
+MODEL_FILE_NAME = "{}_sampling_mccfr_solver_autobattler_6powers_{}_{}.pickle"
 
 itertaions = 50000
 key_step = 500

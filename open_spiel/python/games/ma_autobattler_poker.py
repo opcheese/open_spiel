@@ -71,7 +71,7 @@ for i in range(c85):
 
 all_deals_ind = np.arange(len(all_deals)) 
 card_types = list(np.arange(TOTAL_CARDS/SUIT_NUMBER, dtype=int))
-powered_cards_list = list(itertools.permutations(card_types,5))
+powered_cards_list = list(itertools.permutations(card_types,6))
 def genStats(ability_order):
     one_stats = {}
     for i in range(int(TOTAL_CARDS/SUIT_NUMBER)):
@@ -195,7 +195,16 @@ class FighterAbility(BasicAbility):
         side =  state.left_side if card.side_num ==1 else state.right_side
         enemy = side[0]
         if not enemy.suit==card.suit:
-            card.stat+=2  
+            card.stat+=3
+
+class DavidAbility(BasicAbility):
+    def __init__(self):
+        pass
+
+    def performance(self,state,card):
+        side =  state.left_side if card.side_num ==1 else state.right_side
+        enemy = side[0]
+        card.stat = enemy.stat   
         
 class MartyrdomAbility(BasicAbility):
     def __init__(self):
@@ -366,6 +375,8 @@ Ability_List.append(TokenAbility())
 Ability_List.append(EaterAbility())
 Ability_List.append(FighterAbility())
 Ability_List.append(GrowerAbility())
+Ability_List.append(DavidAbility())
+
 
 
 _DEFAULT_PARAMS = {
