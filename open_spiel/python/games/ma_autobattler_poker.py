@@ -213,7 +213,9 @@ class MartyrdomAbility(BasicAbility):
     def swangsong(self,state,side_num,card):
         side =  state.left_side if side_num ==1 else state.right_side
         for card in side:
-           state.kill_card(card)
+          card.take_damage(2)
+          #if (card.stat>3):
+          #state.kill_card(card)
         state.clean_up()
 
 class TokenAbility(BasicAbility):
@@ -699,5 +701,6 @@ if __name__ == "__main__":
       state._apply_action(c)
     else:
       la = state._legal_actions(state.current_player())
-      a = la[0]
+      a = la[0] 
       state._apply_action(a)
+  print("done")
