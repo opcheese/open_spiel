@@ -20,7 +20,7 @@ from __future__ import print_function
 
 from absl import app
 from absl import flags
-from torch import rand
+#from torch import rand
 
 from open_spiel.python.algorithms import cfr
 from open_spiel.python.algorithms import exploitability
@@ -32,10 +32,12 @@ import random
 import mlflow
 import datetime
 import os,glob
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 import pandas as pd
 import logging
 from tqdm import tqdm
-
+from pathlib import Path 
 
 logging.basicConfig(filename='example.log',level=logging.INFO)
 # create logger
@@ -58,6 +60,9 @@ logger.propagate = False
 #logger.addHandler(consoleHandler)
 
 
+# def read_resolv():
+#   return "91.206.15.133"
+
 def read_resolv():
    res = ""
    with open("/etc/resolv.conf", 'r') as fp:
@@ -68,8 +73,6 @@ def read_resolv():
          break
 
    return res
-
-
 
 def parse_filename(filename):
   res = {"ok":False} 
@@ -88,10 +91,12 @@ def main(_):
   mlflow.set_tracking_uri(remote_server_uri)
   mlflow.set_experiment("AutoBattler")
 
-  experiments_path = "/home/kirill/Experiments/"
-  base_pickle_path = "/home/kirill/myspiel"
+  experiments_path = "/home/wurkwurk/Experiments/"
+  base_pickle_path = "/home/wurkwurk/ma_spiel/open_spiel"
+  b = glob.glob(base_pickle_path+"/"+"external_sampling_mccfr_solver_autobattler_6powers_*.pickle")
+  print(b)
   for file in glob.glob(base_pickle_path+"/"+"external_sampling_mccfr_solver_autobattler_6powers_*.pickle"):
-    parsed_name = parse_filename(file)
+    parsed_name = parse_filename(Path(file).name)
     if not parsed_name["ok"] or parsed_name["rules"] not in open_spiel.python.games.ma_autobattler_poker.all_stats or parsed_name["iter"]<10000:
       continue
     print(file)

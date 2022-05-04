@@ -47,7 +47,7 @@ flags.DEFINE_integer("players", 2, "Number of players")
 
 MODEL_FILE_NAME = "{}_sampling_mccfr_solver_autobattler_6powers_{}_{}.pickle"
 
-itertaions = 50000
+itertaions = 5000
 key_step = 500
 
 def run_iterations(game, solver, start_iteration=0):
@@ -81,7 +81,13 @@ def main(_):
   game1 = pyspiel.load_game(
       "python_kuhn_poker"
   )
-  for i in range(0,1000,50):
+  for i in range(0,1000,1):
+    if i%20==0:
+      continue
+    rules_fut = open_spiel.python.games.ma_autobattler_poker.all_stats[i]
+    if rules_fut[0][1]!=5:
+      continue
+    
     game = open_spiel.python.games.ma_autobattler_poker.MaAutobattlerGame({"rules":i})
     FLAGS.sampling = "external"
     if FLAGS.sampling == "external":

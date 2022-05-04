@@ -227,6 +227,30 @@ class TokenAbility(BasicAbility):
         token = state.create_card(1,0,card.suit)
         state.add_card(token,side_num)
 
+class ToxicAbility(BasicAbility):
+    def __init__(self):
+        pass
+        
+    def swangsong(self,state,side_num,card):
+        side = state.left_side if side_num ==1 else state.right_side
+        if 0 in side:
+          side[0].stat+=2
+
+class InfestAbility(BasicAbility):
+   def __init__(self):
+        pass
+    
+   def debut(self,state,side_num,card):
+        state.clean_up()
+        side =  state.left_side if side_num ==1 else state.right_side
+        if 0 in side:
+          side[0].take_damage(2)
+        else:
+            token = state.create_card(1,-1,card.suit)
+            state.add_card(token,(side_num+1)%2)
+        state.clean_up()
+
+
 class BoardState():
     def __init__(self):
          self.left_side = []
@@ -372,12 +396,15 @@ class GameEngine():
 
 Ability_List = []
 Ability_List.append(BasicAbility())
-Ability_List.append(MartyrdomAbility())
+#Ability_List.append(MartyrdomAbility())
 Ability_List.append(TokenAbility())
 Ability_List.append(EaterAbility())
 Ability_List.append(FighterAbility())
 Ability_List.append(GrowerAbility())
 Ability_List.append(DavidAbility())
+Ability_List.append(InfestAbility())
+Ability_List.append(ToxicAbility())
+
 
 
 
@@ -543,6 +570,8 @@ class MaAutobattlerState(pyspiel.State):
       Cache[key] = res
       if res ==-1:
         self.game_res = [1,-1]
+      elif res == 0:
+        self.game_res= [0,0]
       else:
         self.game_res = [-1,1]  
     
