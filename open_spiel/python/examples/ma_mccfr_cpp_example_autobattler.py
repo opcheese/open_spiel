@@ -26,12 +26,13 @@ from __future__ import print_function
 import pickle
 from absl import app
 from absl import flags
-
+import random
 import pyspiel
 import open_spiel.python.games.ma_autobattler_poker
 from open_spiel.python.algorithms import external_sampling_mccfr
 from open_spiel.python.algorithms import exploitability
 from tqdm import tqdm
+import os
 
 FLAGS = flags.FLAGS
 
@@ -45,7 +46,7 @@ flags.DEFINE_integer("iterations", 50, "Number of iterations")
 flags.DEFINE_string("game", "kuhn_poker", "Name of the game")
 flags.DEFINE_integer("players", 2, "Number of players")
 
-MODEL_FILE_NAME = "{}_sampling_mccfr_solver_autobattler_6powers_{}_{}.pickle"
+MODEL_FILE_NAME = "{}_sampling_mccfr_solver_autobattler_7power_fixed_{}_{}.pickle"
 
 itertaions = 5000
 key_step = 500
@@ -81,13 +82,19 @@ def main(_):
   game1 = pyspiel.load_game(
       "python_kuhn_poker"
   )
-  for i in range(0,1000,1):
-    if i%20==0:
-      continue
+  for i in range(0,5040):
+    # rn_v = random.randint(0, 30)
+    # if rn_v!=1:
+    #   continue
+    # if i%20==0:
+    #   continue
     rules_fut = open_spiel.python.games.ma_autobattler_poker.all_stats[i]
-    if rules_fut[0][1]!=5:
+    name_fut = MODEL_FILE_NAME.format(FLAGS.sampling,i,itertaions)
+    if  os.path.exists(name_fut) or os.path.exists(name_fut+".done"):
       continue
-    
+    # if rules_fut[0][1]!=6:
+    #   continue
+    print(i)
     game = open_spiel.python.games.ma_autobattler_poker.MaAutobattlerGame({"rules":i})
     FLAGS.sampling = "external"
     if FLAGS.sampling == "external":

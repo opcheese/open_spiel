@@ -35,7 +35,8 @@ import math
 import random
 import pyspiel
 import logging
-
+import open_spiel.python.games.ma_autobattler_engine as engine
+import json
 
 logger = logging.getLogger("somelogger")
 
@@ -70,8 +71,8 @@ for i in range(c85):
         #print(tupl)
 
 all_deals_ind = np.arange(len(all_deals)) 
-card_types = list(np.arange(TOTAL_CARDS/SUIT_NUMBER, dtype=int))
-powered_cards_list = list(itertools.permutations(card_types,6))
+card_types = list(np.arange(TOTAL_CARDS/SUIT_NUMBER+1, dtype=int))
+powered_cards_list = list(itertools.permutations(card_types,7))
 def genStats(ability_order):
     one_stats = {}
     for i in range(int(TOTAL_CARDS/SUIT_NUMBER)):
@@ -83,7 +84,7 @@ all_stats = {}
 one_suit = int(TOTAL_CARDS/SUIT_NUMBER)
 
 for main_ind,power_list in enumerate(powered_cards_list):
-    ability_orders = [0] * one_suit
+    ability_orders = [0] * (one_suit+1)
     
     for ind,power in enumerate(power_list):
         ability_orders[power] = ind+1
@@ -91,319 +92,6 @@ for main_ind,power_list in enumerate(powered_cards_list):
 
     
 
-class Card():
-    def __init__(self, stat, ability,suit,side_num):
-        #self.priority = priority
-        self.stat = stat
-        self.is_dead = False
-        self.ability = ability
-        self.initial_stat = stat
-        self.suit = suit
-        self.swang_called = False
-        self.side_num = side_num
-
-    def take_damage(self,damage):
-        self.stat -= damage
-        if self.stat <= 0:
-            self.is_dead = True
-    
-    def debut(self,state,side_num):
-         self.ability.debut(state,side_num,self)
-
-    def performance(self,state):
-         self.ability.performance(state,self)
-
-
-    def swangsong(self,state,side_num):
-         if not self.swang_called:
-            self.swang_called = True
-            self.ability.swangsong(state,side_num,self)
-    
-    def __str__(self):
-        res = "intial {}| current {}|suit {}| ability {}".format(self.initial_stat,self.stat,self.suit, str(self.ability))
-        return res
-    
-    def __repr__(self):
-        return self.__str__()
-
-
-
-class BasicAbility():
-    def __init__(self):
-        pass
-    
-    def debut(self,state,side_num,card):
-        side =  state.left_side if side_num ==0 else state.right_side
-        while len(side) > 0:
-            for card in side:
-                state.kill_card(card)
-        state.clean_up()
-        
-    def swangsong(self,state,side_num,card):
-        pass
-
-    def performance(self,state,card):
-        pass
-
-    def __str__(self):
-        res =  type(self).__name__
-        return res
-
-class EaterAbility(BasicAbility):
-    def __init__(self):
-        pass
-    
-    def debut(self,state,side_num,card):
-        side =  state.left_side if side_num ==0 else state.right_side
-        while len(side) > 0:
-            for old_card in side:
-                if card.suit == old_card.suit:
-                    card.stat+=old_card.stat
-                state.kill_card(old_card)
-        state.clean_up()
-        
-
-
-    def __str__(self):
-        res =  type(self).__name__
-        return res
-
-class GrowerAbility(BasicAbility):
-    def __init__(self):
-        pass
-    
-    def debut(self,state,side_num,card):
-        side =  state.left_side if side_num ==0 else state.right_side
-        while len(side) > 0:
-            for old_card in side:
-                if card.stat == old_card.stat:
-                    card.stat+=old_card.stat+2
-                state.kill_card(old_card)
-        state.clean_up()
-        
-
-
-    def __str__(self):
-        res =  type(self).__name__
-        return res
-
-class FighterAbility(BasicAbility):
-    def __init__(self):
-        pass
-
-    def performance(self,state,card):
-        side =  state.left_side if card.side_num ==1 else state.right_side
-        enemy = side[0]
-        if not enemy.suit==card.suit:
-            card.stat+=3
-
-class DavidAbility(BasicAbility):
-    def __init__(self):
-        pass
-
-    def performance(self,state,card):
-        side =  state.left_side if card.side_num ==1 else state.right_side
-        enemy = side[0]
-        card.stat = enemy.stat   
-        
-class MartyrdomAbility(BasicAbility):
-    def __init__(self):
-        super().__init__()
-
-    def swangsong(self,state,side_num,card):
-        side =  state.left_side if side_num ==1 else state.right_side
-        for card in side:
-          card.take_damage(2)
-          #if (card.stat>3):
-          #state.kill_card(card)
-        state.clean_up()
-
-class TokenAbility(BasicAbility):
-    def __init__(self):
-        pass
-        
-    def swangsong(self,state,side_num,card):
-        side =  state.left_side if side_num ==0 else state.right_side
-        token = state.create_card(1,0,card.suit)
-        state.add_card(token,side_num)
-
-class ToxicAbility(BasicAbility):
-    def __init__(self):
-        pass
-        
-    def swangsong(self,state,side_num,card):
-        side = state.left_side if side_num ==1 else state.right_side
-        if 0 in side:
-          side[0].stat+=2
-
-class InfestAbility(BasicAbility):
-   def __init__(self):
-        pass
-    
-   def debut(self,state,side_num,card):
-        state.clean_up()
-        side =  state.left_side if side_num ==1 else state.right_side
-        if 0 in side:
-          side[0].take_damage(2)
-        else:
-            token = state.create_card(1,-1,card.suit)
-            state.add_card(token,(side_num+1)%2)
-        state.clean_up()
-
-
-class BoardState():
-    def __init__(self):
-         self.left_side = []
-         self.right_side = []
-
-    def left_count(self):
-        return len(self.left_side)
-    
-    def right_count(self):
-        return len(self.right_side)
-         
-    @staticmethod
-    def create_card(stat, ability_num,suit):
-        #side =  self.left_side if side_num ==0 else self.right_side
-        card = Card(stat, Ability_List[ability_num],suit,0)
-        return card
-
-        
-    def add_card(self,card,side_num):
-        side =  self.left_side if side_num ==0 else self.right_side
-        card.side_num = side_num
-        card.debut(self,side_num)
-        side.append(card)
-
-    def clean_side(self, side_num):
-        side =  self.left_side if side_num ==0 else self.right_side
-        self.clean_up()
-         
-
-
-    def kill_card(self, card):
-        side = None
-        side_num=-1
-        not_found= False
-        if card in self.left_side:
-            side = self.left_side
-            side_num = 0
-        elif card in self.right_side:
-            side = self.right_side
-            side_num = 1
-        else:
-            not_found = True
-        if not not_found:
-            card.swangsong(self,side_num)
-            if card in side:
-                side.remove(card)
-
-    def clean_up(self):
-        for card in self.left_side:
-            if card.is_dead and card.swang_called:
-                self.left_side.remove(card)
-        for card in self.right_side:
-            if card.is_dead and card.swang_called:
-                self.right_side.remove(card)
-
-
-
-    def perfomance(self):
-        left_card = self.left_side[0]
-        right_card = self.right_side[0]
-        left_card.performance(self)
-        right_card.performance(self)
-
-        right_attack = right_card.stat
-        left_attack = left_card.stat
-        left_card.take_damage(right_attack)
-        right_card.take_damage(left_attack)
-        if left_card.is_dead:
-            self.kill_card(left_card)
-        #right card might have died as a result of swangsong    
-        if right_card.is_dead and right_card in self.right_side:
-            self.kill_card(right_card)
-        self.clean_up()
-
-    def __str__(self):
-        lc ='EMPTY' if len(self.left_side) == 0 else  str(self.left_side[0])
-        rc ='EMPTY' if len(self.right_side) == 0 else  str(self.right_side[0])
-
-        res = lc + '|||' + rc
-        return res
-
-class GameEngine():
-    def __init__(self, first_hand,second_hand,stats):
-        self.board_state = BoardState()
-        self.left_cards = []
-        self.right_cards = []
-        for card_num in first_hand:
-            card = BoardState.create_card(stats[card_num][0],stats[card_num][1],stats[card_num][2])
-            self.left_cards.append(card)
-        
-        for card_num in second_hand:
-            card = BoardState.create_card(stats[card_num][0],stats[card_num][1],stats[card_num][2])
-            self.right_cards.append(card)
-        
-        self.current_phaze = 0
-
-    def return_winner(self):
-        if len(self.board_state.left_side) > len(self.board_state.right_side):
-            return -1 #left winner 
-        elif len(self.board_state.left_side) < len(self.board_state.right_side):
-            return 1 #right winner
-        else:
-            return 0 #draw
-    
-    def main_loop(self):
-
-        game_over = False
-        logger.debug("---new game---")
-        while not game_over:
-            logger.debug("---new round---")
-            logger.debug("--initial ---" + str(self.board_state))
-            logger.debug("left hand:"+str(self.left_cards))
-            logger.debug("right hand:"+str(self.right_cards))
-            
-            fight_worthy = self.board_state.left_count() > 0 and self.board_state.right_count() > 0
-            enough_draw = len(self.left_cards)>0 and len(self.right_cards)>0
-            if not enough_draw and not fight_worthy:
-                game_over = True
-                break
-            if self.current_phaze == 0:
-                logger.debug("---phaze 0---")
-            
-                if  enough_draw:
-                    cardL = self.left_cards.pop()
-                    self.board_state.add_card(cardL,0)
-
-                    cardR = self.right_cards.pop()
-                    self.board_state.add_card(cardR,1)
-
-                self.current_phaze=1
-            
-            logger.debug("--play ---" + str(self.board_state))
-
-            fight_worthy = self.board_state.left_count() > 0 and self.board_state.right_count() > 0
-
-
-            if self.current_phaze==1 and fight_worthy:
-                self.board_state.perfomance()
-                self.current_phaze = 0
-            
-            logger.debug("--after ---" + str(self.board_state))
-
-
-Ability_List = []
-Ability_List.append(BasicAbility())
-#Ability_List.append(MartyrdomAbility())
-Ability_List.append(TokenAbility())
-Ability_List.append(EaterAbility())
-Ability_List.append(FighterAbility())
-Ability_List.append(GrowerAbility())
-Ability_List.append(DavidAbility())
-Ability_List.append(InfestAbility())
-Ability_List.append(ToxicAbility())
 
 
 
@@ -456,7 +144,7 @@ class MaAutobattlerGame(pyspiel.Game):
     for k in tmp:
       val = tmp[k]
       if val[2] == 0: 
-        ability = str(Ability_List[val[1]])
+        ability = str(engine.Ability_List[val[1]])
         st = str(val[0])
         res_str = "||{}:{} {}||".format(k//2,st,ability)
         res+=res_str
@@ -522,6 +210,7 @@ class MaAutobattlerState(pyspiel.State):
   def _apply_action(self, action):
     """Applies the specified action to the state."""
     logger.debug("stage is {}, applying {}".format(self.stage,action))
+    resLog = None
     if self.stage == 0:
       deal = all_deals[action]
       self.left_cards = deal[0]
@@ -564,8 +253,8 @@ class MaAutobattlerState(pyspiel.State):
       else:
         self.game_res = [-1,1]  
     else:
-      ge = GameEngine(self.left_cards,self.right_cards,self.stats)
-      ge.main_loop()
+      ge = engine.GameEngine(self.left_cards,self.right_cards,self.stats)
+      resLog = ge.main_loop()
       res = ge.return_winner()
       Cache[key] = res
       if res ==-1:
@@ -576,6 +265,7 @@ class MaAutobattlerState(pyspiel.State):
         self.game_res = [-1,1]  
     
     self._game_over = True
+    return resLog
 
   def action_to_card(self,action,player):
     res = -1
@@ -717,19 +407,32 @@ class MaAutobattlerObserver:
 
 pyspiel.register_game(_GAME_TYPE, MaAutobattlerGame)
 
+
+def printResLog(resLog):
+  for stage in resLog:
+    print(stage)
+    for event in stage["events"]:
+      print(event)
 if __name__ == "__main__":
 
  
   game = MaAutobattlerGame({"rules":0})
 
   state = game.new_initial_state()
+  resLog = []
   while not state.is_terminal():
     if state.current_player() == pyspiel.PlayerId.CHANCE:
       lc = state.chance_outcomes()
       c = lc[0][0]
-      state._apply_action(c)
+      resLog = state._apply_action(c)
+      if resLog!=None and len(resLog) > 0:
+
+        res = json.dumps(resLog,default=vars)
+        print(res)
+        #printResLog(resLog)
     else:
       la = state._legal_actions(state.current_player())
       a = la[0] 
-      state._apply_action(a)
+      b = state._apply_action(a)
+     
   print("done")

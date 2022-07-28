@@ -77,7 +77,7 @@ def read_resolv():
 def parse_filename(filename):
   res = {"ok":False} 
   parts = filename.split("_")
-  if len(parts) == 8:
+  if len(parts) == 9:
     res["ok"] =True
     res["rules"] = int(parts[-2])
     ends = parts[-1].split(".")
@@ -89,15 +89,15 @@ def main(_):
   print(uri)
   remote_server_uri = uri # set to your server URI
   mlflow.set_tracking_uri(remote_server_uri)
-  mlflow.set_experiment("AutoBattler")
+  mlflow.set_experiment("AutoBattlerMaybeCorrect")
 
   experiments_path = "/home/wurkwurk/Experiments/"
   base_pickle_path = "/home/wurkwurk/ma_spiel/open_spiel"
-  b = glob.glob(base_pickle_path+"/"+"external_sampling_mccfr_solver_autobattler_6powers_*.pickle")
+  b = glob.glob(base_pickle_path+"/"+"external_sampling_mccfr_solver_autobattler_7power_fixed_*.pickle")
   print(b)
-  for file in glob.glob(base_pickle_path+"/"+"external_sampling_mccfr_solver_autobattler_6powers_*.pickle"):
+  for file in glob.glob(base_pickle_path+"/"+"external_sampling_mccfr_solver_autobattler_7power_fixed_*.pickle"):
     parsed_name = parse_filename(Path(file).name)
-    if not parsed_name["ok"] or parsed_name["rules"] not in open_spiel.python.games.ma_autobattler_poker.all_stats or parsed_name["iter"]<10000:
+    if not parsed_name["ok"] or parsed_name["rules"] not in open_spiel.python.games.ma_autobattler_poker.all_stats or parsed_name["iter"]<5000:
       continue
     print(file)
     game = open_spiel.python.games.ma_autobattler_poker.MaAutobattlerGame({"rules":parsed_name["rules"]})
@@ -117,6 +117,7 @@ def main(_):
     file_name = file
     with open(file_name, 'rb') as fp:
           solver = pickle.load(fp)
+    
     original_policy = solver.average_policy()
     a1 = 0
     a2 = 0
@@ -153,6 +154,8 @@ def main(_):
         rul_str =  game.rules_to_str()
         #print(rul_str)
         mlflow.log_param("rules",rul_str)
+        mlflow.log_param("tag","7power")
+        mlflow.set_tag("power","7power")
         logger.debug("game rules:{}".format(game.rules_to_str()))
 
         mlflow.log_param("filename", file_name)
@@ -177,8 +180,8 @@ def main(_):
                 
                 logger.debug(state_policy)
 
-                p = np.argmax(state_policy)
-                p_minus = np.argmin(state_policy)
+                p = max(state_policy, key=state_policy.get)
+                p_minus = min(state_policy, key=state_policy.get)
                 if log_meta:
                   #meta_str =  str(state_policy)
                 
@@ -190,15 +193,15 @@ def main(_):
                   # a1 = int(input())
                   # state._apply_action(a1)
 
-                  min_p = min(state_policy)
-                  max_p = max(state_policy)
+                  min_p = min(state_policy.values())
+                  max_p = max(state_policy.values())
                   if min_p < eps_useless:
                     one_useless+=1
                   
                   if max_p > 1.0-eps_useless:
                     no_choice+=1
                   
-                  if abs(state_policy[0] - all_eq_val) < eps_useless:
+                  if abs(max_p - all_eq_val) < eps_useless:
                     all_equal+=1
 
                   card = state.action_to_card(p,state.current_player())
@@ -247,6 +250,8 @@ def main(_):
         #print(a1,a2)
         mlflow.log_metric("a1", a1)
         mlflow.log_metric("a2", a2)
+        mlflow.log_metric("adif", a2-a1)
+
         mlflow.log_metric("a0", a0)
         mlflow.log_metric("one_useless", one_useless)
         mlflow.log_metric("all_equal", all_equal)
@@ -259,7 +264,9 @@ def main(_):
         for ind,card in enumerate(card_counter_discarded):
           mlflow.log_metric("card_discraded"+str(ind), card)
         for ind,card in enumerate(card_counter_kept):
-          mlflow.log_metric("card_kept"+str(ind), card) 
+          mlflow.log_metric("card_kept"+str(ind), card)
+
+    os.rename(file_name, file_name+".done") 
 
       
 

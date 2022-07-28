@@ -63,3 +63,4 @@ open_spiel/python/examples/all_states
 *.pkl
 *.pickle
 example.log
+*.done
