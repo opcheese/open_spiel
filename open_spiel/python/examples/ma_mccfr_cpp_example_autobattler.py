@@ -24,8 +24,6 @@ from __future__ import division
 from __future__ import print_function
 
 import pickle
-from absl import app
-from absl import flags
 import random
 import pyspiel
 import open_spiel.python.games.ma_autobattler_poker
@@ -33,27 +31,29 @@ from open_spiel.python.algorithms import external_sampling_mccfr
 from open_spiel.python.algorithms import exploitability
 from tqdm import tqdm
 import os
+import ray
+ray.init(num_cpus=10)
 
-FLAGS = flags.FLAGS
+# FLAGS = flags.FLAGS
 
-flags.DEFINE_enum(
-    "sampling",
-    "external",
-    ["external", "outcome"],
-    "Sampling for the MCCFR solver",
-)
-flags.DEFINE_integer("iterations", 50, "Number of iterations")
-flags.DEFINE_string("game", "kuhn_poker", "Name of the game")
-flags.DEFINE_integer("players", 2, "Number of players")
-
+# flags.DEFINE_enum(
+#     "sampling",
+#     "external",
+#     ["external", "outcome"],
+#     "Sampling for the MCCFR solver",
+# )
+# flags.DEFINE_integer("iterations", 50, "Number of iterations")
+# flags.DEFINE_string("game", "kuhn_poker", "Name of the game")
+# flags.DEFINE_integer("players", 2, "Number of players")
+path = "/home/wurk/w/spiel/ress/"
 MODEL_FILE_NAME = "{}_sampling_mccfr_solver_autobattler_7power_fixed_{}_{}.pickle"
 
-itertaions = 5000
+itertaions = 7000
 key_step = 500
 
 def run_iterations(game, solver, start_iteration=0):
   """Run iterations of MCCFR."""
-  for i in tqdm(range(int(itertaions))):
+  for i in range(int(itertaions)):
     #print(i)
     solver.iteration()
     
@@ -76,39 +76,48 @@ def run_iterations(game, solver, start_iteration=0):
 
       # print("Iteration {} nashconv: {:.6f} exploitability: {:.6f}".format(
       #     start_iteration + i, nash_conv, exploitability_val))
+@ray.remote
+def calcul(i):
+    print(i)
+    print()
+    sampling = "external"
+    rules_fut = open_spiel.python.games.ma_autobattler_poker.all_stats[i]
+    print(MODEL_FILE_NAME.format(sampling,i,itertaions))
+    name_fut = MODEL_FILE_NAME.format(sampling,i,itertaions)
+    if  os.path.exists(name_fut) or os.path.exists(name_fut+".done"):
+      return
+    # if rules_fut[0][1]!=6:
+    #   continue
+  
+    game = open_spiel.python.games.ma_autobattler_poker.MaAutobattlerGame({"rules":i})
+   
+    if sampling == "external":
+      solver = external_sampling_mccfr.ExternalSamplingSolver(
+          game, external_sampling_mccfr.AverageType.SIMPLE)
+    elif sampling == "outcome":
+      solver = pyspiel.OutcomeSamplingMCCFRSolver(game)
 
+    run_iterations(game, solver)
+
+    print("Persisting the model...")    
+    with open(MODEL_FILE_NAME.format(sampling,i,itertaions), "wb") as file:
+      pickle.dump(solver, file, pickle.HIGHEST_PROTOCOL)
+    print("Done " +str(i))
 
 def main(_):
   game1 = pyspiel.load_game(
       "python_kuhn_poker"
   )
-  for i in range(0,5040):
+  pids = []
+  for i in range(3000,5040):
     # rn_v = random.randint(0, 30)
     # if rn_v!=1:
     #   continue
     # if i%20==0:
     #   continue
-    rules_fut = open_spiel.python.games.ma_autobattler_poker.all_stats[i]
-    name_fut = MODEL_FILE_NAME.format(FLAGS.sampling,i,itertaions)
-    if  os.path.exists(name_fut) or os.path.exists(name_fut+".done"):
-      continue
-    # if rules_fut[0][1]!=6:
-    #   continue
-    print(i)
-    game = open_spiel.python.games.ma_autobattler_poker.MaAutobattlerGame({"rules":i})
-    FLAGS.sampling = "external"
-    if FLAGS.sampling == "external":
-      solver = external_sampling_mccfr.ExternalSamplingSolver(
-          game, external_sampling_mccfr.AverageType.SIMPLE)
-    elif FLAGS.sampling == "outcome":
-      solver = pyspiel.OutcomeSamplingMCCFRSolver(game)
-
-    run_iterations(game, solver)
-
-    print("Persisting the model...")
-    with open(MODEL_FILE_NAME.format(FLAGS.sampling,i,itertaions), "wb") as file:
-      pickle.dump(solver, file, pickle.HIGHEST_PROTOCOL)
-
+    pid = calcul.remote(i)
+    pids.append(pid)
+  ray.get(pids)
 
 if __name__ == "__main__":
-  app.run(main)
+  main("1")

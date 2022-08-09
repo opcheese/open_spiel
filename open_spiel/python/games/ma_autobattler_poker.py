@@ -151,6 +151,12 @@ class MaAutobattlerGame(pyspiel.Game):
     #res = str(all_stats[self.rules])
     return res
 
+  def get_hands(self,action):
+      deal = all_deals[action]
+      left_cards = deal[0]
+      right_cards = deal[1]
+      return {"deal":deal, "left":left_cards,"right":right_cards}
+
   def make_py_observer(self, iig_obs_type=None, params=None):
     """Returns an object used for observing game state."""
     return MaAutobattlerObserver(
@@ -172,7 +178,6 @@ class MaAutobattlerState(pyspiel.State):
     self.stats = all_stats[rules]
     self.left_discard = -1
     self.right_discard = -1
-
 
   # OpenSpiel (PySpiel) API functions are below. This is the standard set that
   # should be implemented by every sequential-move game with chance.
