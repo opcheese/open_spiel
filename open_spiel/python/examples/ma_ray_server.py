@@ -42,6 +42,15 @@ class GameEngineServer:
         res = ge.main_loop()
         return res
 
+    @app.get("/battleind")
+    def get_result_from(self, hind:int):
+        hands = self.game.get_hands(hind)
+        left_hand = hands["left"]
+        right_hand = hands["right"]
+        ge = open_spiel.python.games.ma_autobattler_engine.GameEngine(left_hand,right_hand,self.game.stats)
+        res = ge.main_loop()
+        return res
+
     @app.get("/hands")
     def get_summary_min10(self):
         hnd = random.randint(0,self.max_chance_outcomes)
