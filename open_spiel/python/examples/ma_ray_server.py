@@ -7,6 +7,8 @@ from open_spiel.python.algorithms import cfr
 from open_spiel.python.algorithms import exploitability
 import pyspiel
 import open_spiel.python.games.ma_autobattler_poker
+import open_spiel.python.games.ma_autobattler_engine
+
 import pickle
 import random
 
@@ -18,23 +20,27 @@ serve.start(detached=True)
 
 @serve.deployment
 @serve.ingress(app)
-class Summarizer:
-    def __init__(self):
-        game = open_spiel.python.games.ma_autobattler_poker.MaAutobattlerGame({"rules":1})
+class GameEngineServer:
+    def __init__(self, rules: int = 1):
+        game = open_spiel.python.games.ma_autobattler_poker.MaAutobattlerGame({"rules":rules})
+        
         self.summarize = "123"
-        base_pickle_path = "/home/wurk/w/spiel"
-        file_name = base_pickle_path+"/"+"external_sampling_mccfr_solver_autobattler_7power_fixed_1_7000.pickle"
+        base_pickle_path = "/home/wurkwurk/ma_spiel/open_spiel"
+        file_name = base_pickle_path+"/"+"external_sampling_mccfr_solver_autobattler_7power_fixed_{}_5000.pickle.done".format(rules)
         with open(file_name, 'rb') as fp:
             solver = pickle.load(fp)
         self.solver = solver
         self.max_chance_outcomes = game.max_chance_outcomes()  
         self.game = game              
 
-    @app.get("/")
-    def get_summary(self, txt: str):
-        summary_list = self.summarize
-        summary = summary_list
-        return summary
+    @app.get("/battle")
+    def get_result(self, hands:str):
+        two_hands = hands.split("|")
+        left_hand = [int(x) for x in two_hands[0].split(",")]
+        right_hand = [int(x) for x in two_hands[1].split(",")]
+        ge = open_spiel.python.games.ma_autobattler_engine.GameEngine(left_hand,right_hand,self.game.stats)
+        res = ge.main_loop()
+        return res
 
     @app.get("/hands")
     def get_summary_min10(self):
@@ -49,5 +55,5 @@ class Summarizer:
         summary = summary_list
         return summary
 
-#a = Summarizer()
-Summarizer.deploy()
+#a = GameEngineServer()
+GameEngineServer.deploy()
