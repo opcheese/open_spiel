@@ -64,3 +64,4 @@ open_spiel/python/examples/all_states
 *.pickle
 example.log
 *.done
+.env

@@ -11,7 +11,9 @@ import open_spiel.python.games.ma_autobattler_engine
 
 import pickle
 import random
+from dotenv import dotenv_values
 
+config = dotenv_values(".env") 
 app = FastAPI()
 
 ray.init(address="auto", namespace="serve")
@@ -25,8 +27,9 @@ class GameEngineServer:
         game = open_spiel.python.games.ma_autobattler_poker.MaAutobattlerGame({"rules":rules})
         
         self.summarize = "123"
-        base_pickle_path = "/home/wurkwurk/ma_spiel/open_spiel"
-        file_name = base_pickle_path+"/"+"external_sampling_mccfr_solver_autobattler_7power_fixed_{}_5000.pickle.done".format(rules)
+        base_pickle_path = config["ROOTPATH"]
+        template_name = config["TEMPLATENAME"]
+        file_name = base_pickle_path+"/"+template_name.format(rules)
         with open(file_name, 'rb') as fp:
             solver = pickle.load(fp)
         self.solver = solver
