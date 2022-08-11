@@ -8,7 +8,8 @@ from open_spiel.python.algorithms import exploitability
 import pyspiel
 import open_spiel.python.games.ma_autobattler_poker
 import open_spiel.python.games.ma_autobattler_engine
-
+import json
+import numpy as np
 import pickle
 import random
 from dotenv import dotenv_values
@@ -19,6 +20,16 @@ app = FastAPI()
 ray.init(address="auto", namespace="serve")
 serve.start(detached=True)
 
+
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)
 
 @serve.deployment
 @serve.ingress(app)
@@ -59,7 +70,7 @@ class GameEngineServer:
         hnd = random.randint(0,self.max_chance_outcomes)
         res1 = self.game.get_hands(hnd)
         res1["num"] = hnd      
-        return str(res1)
+        return json.dumps(res1,cls=NpEncoder)
 
     @app.get("/max10")
     def get_summary_max10(self, txt: str):
