@@ -45,6 +45,7 @@ class Card():
 
 
 class BasicAbility():
+    """Just stats"""
     def __init__(self):
         pass
     
@@ -66,6 +67,7 @@ class BasicAbility():
         return res
 
 class EaterAbility(BasicAbility):
+    """Increase stats if same suit"""
     def __init__(self):
         pass
     
@@ -85,6 +87,7 @@ class EaterAbility(BasicAbility):
         return res
 
 class GrowerAbility(BasicAbility):
+    """Inscrease stat by 2 if same stat"""
     def __init__(self):
         pass
     
@@ -104,6 +107,7 @@ class GrowerAbility(BasicAbility):
         return res
 
 class FighterAbility(BasicAbility):
+    """double stat if enemy of the same suit"""
     def __init__(self):
         pass
 
@@ -114,6 +118,7 @@ class FighterAbility(BasicAbility):
             state.buf_amount(card,card.stat)
 
 class DavidAbility(BasicAbility):
+    """Get stat equal to enemy"""
     def __init__(self):
         pass
 
@@ -123,6 +128,7 @@ class DavidAbility(BasicAbility):
         state.set_stat(card,enemy.stat)
         
 class MartyrdomAbility(BasicAbility):
+    """Do 2 damage to enemy on death"""
     def __init__(self):
         super().__init__()
 
@@ -135,6 +141,7 @@ class MartyrdomAbility(BasicAbility):
         state.clean_up()
 
 class TokenAbility(BasicAbility):
+    """create a 1 stat token of the same suit on death"""
     def __init__(self):
         pass
         
@@ -144,6 +151,7 @@ class TokenAbility(BasicAbility):
         state.add_card(token,side_num)
 
 class ToxicAbility(BasicAbility):
+    """on death buff enemy"""
     def __init__(self):
         pass
         
@@ -154,6 +162,7 @@ class ToxicAbility(BasicAbility):
             #side[0].stat+=2
 
 class InfestAbility(BasicAbility):
+   """On play do 2 damage if no enemy create a tocix token""" 
    def __init__(self):
         pass
     

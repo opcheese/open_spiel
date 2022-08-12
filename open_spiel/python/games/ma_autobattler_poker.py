@@ -54,6 +54,7 @@ total_combinations = c85*c53
 first_hands = itertools.combinations(cards,3)
 list_first_hand = list(first_hands)
 
+#print(list(itertools.permutations(range(3),2)))
 
 def get_second_hands(one_first_hand):
     cards_left = [item for item in cards if item not in one_first_hand]
@@ -154,9 +155,9 @@ class MaAutobattlerGame(pyspiel.Game):
 
   def get_hands(self,action):
       deal = all_deals[action]
-      left_cards = deal[0]
-      right_cards = deal[1]
-      return {"deal":deal, "left":left_cards,"right":right_cards}
+      left_cards = list(map(lambda x:x.item(),deal[0]))
+      right_cards = list(map(lambda x:x.item(),deal[1]))
+      return {"deal":[left_cards,right_cards], "left":left_cards,"right":right_cards}
 
   def make_py_observer(self, iig_obs_type=None, params=None):
     """Returns an object used for observing game state."""
