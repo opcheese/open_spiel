@@ -15,10 +15,18 @@ import random
 from dotenv import dotenv_values
 from fastapi import Response
 import itertools
-
+from fastapi.middleware.cors import CORSMiddleware
+origins = ["*"]
 
 config = dotenv_values(".env") 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 ray.init(address="auto", namespace="serve")
 serve.start(detached=True)
@@ -137,8 +145,9 @@ class GameEngineServer:
         rules = list(filter(None,self.game.rules_to_str().split("||"))) 
         dic = {}
         cou = -1
-        for suit in ["♠","♦"]:
-            for rul in rules:
+        
+        for rul in rules:
+            for suit in ["♠","♦"]:
                 cou+=1
                 valab = rul.split(":")[1].split(" ")
                 dic[cou] = "{}{} {}".format(valab[0],suit,valab[1])
@@ -152,5 +161,5 @@ class GameEngineServer:
         return summary
 
 #a = GameEngineServer()
-#a.get_hands()
+#a.get_result("11,8|10,6")
 GameEngineServer.deploy()

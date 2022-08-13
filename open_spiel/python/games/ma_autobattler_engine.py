@@ -30,10 +30,9 @@ class Card():
          self.ability.performance(state,self)
 
 
-    def swangsong(self,state,side_num):
-         if not self.swang_called:
-            self.swang_called = True
-            self.ability.swangsong(state,side_num,self)
+    def swangsong(self,state,side_num):         
+        self.swang_called = True
+        self.ability.swangsong(state,side_num,self)
     
     def __str__(self):
         res = "intial {}| current {}|suit {}| ability {}".format(self.initial_stat,self.stat,self.suit, str(self.ability))
@@ -175,6 +174,11 @@ class InfestAbility(BasicAbility):
         else:
             token = state.create_card(1,-1,card.suit)
             state.add_card(token,(side_num+1)%2)
+
+        side =  state.left_side if side_num ==0 else state.right_side
+        while len(side) > 0:
+            for card in side:
+                state.kill_card(card)
         state.clean_up()
 
 class GameLogEntry():
@@ -478,7 +482,9 @@ class BoardState():
             pre_state = str(self)
             pre_event = SwaningCard(pre_state,card,side_num)
             self.OnGameEvent(pre_event)
-            card.swangsong(self,side_num)
+            if not card.swang_called:
+                card.swang_called = True
+                card.swangsong(self,side_num)
             if card in side:
                 side.remove(card)
             post_state = str(self)

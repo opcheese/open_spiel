@@ -422,9 +422,10 @@ def printResLog(resLog):
       print(event)
 if __name__ == "__main__":
 
+  print(all_stats[1])
  
-  game = MaAutobattlerGame({"rules":0})
-
+  game = MaAutobattlerGame({"rules":1})
+  print(game.rules_to_str())
   state = game.new_initial_state()
   resLog = []
   while not state.is_terminal():
