@@ -65,7 +65,7 @@ class BasicAbility():
         res =  type(self).__name__
         return res
 
-class EaterAbility(BasicAbility):
+class SameSuitAbility(BasicAbility):
     """Increase stats if same suit"""
     def __init__(self):
         pass
@@ -85,7 +85,7 @@ class EaterAbility(BasicAbility):
         res =  type(self).__name__
         return res
 
-class GrowerAbility(BasicAbility):
+class EqualStatAbility(BasicAbility):
     """Inscrease stat by 2 if same stat"""
     def __init__(self):
         pass
@@ -653,9 +653,9 @@ Ability_List = []
 Ability_List.append(BasicAbility())
 Ability_List.append(MartyrdomAbility())
 Ability_List.append(TokenAbility())
-Ability_List.append(EaterAbility())
+Ability_List.append(SameSuitAbility())
 Ability_List.append(FighterAbility())
-Ability_List.append(GrowerAbility())
+Ability_List.append(EqualStatAbility())
 Ability_List.append(DavidAbility())
 Ability_List.append(InfestAbility())
 Ability_List.append(ToxicAbility())

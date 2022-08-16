@@ -29,7 +29,7 @@ app.add_middleware(
 )
 
 ray.init(address="auto", namespace="serve")
-serve.start(detached=True)
+serve.start(detached=True, http_options= {"host":"0.0.0.0"})
 
 
 class NpEncoder(json.JSONEncoder):

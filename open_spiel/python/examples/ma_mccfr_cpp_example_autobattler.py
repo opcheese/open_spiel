@@ -32,7 +32,7 @@ from open_spiel.python.algorithms import exploitability
 from tqdm import tqdm
 import os
 import ray
-ray.init(num_cpus=10)
+ray.init(num_cpus=7)
 
 # FLAGS = flags.FLAGS
 
@@ -46,7 +46,7 @@ ray.init(num_cpus=10)
 # flags.DEFINE_string("game", "kuhn_poker", "Name of the game")
 # flags.DEFINE_integer("players", 2, "Number of players")
 path = "/home/wurk/w/spiel/ress/"
-MODEL_FILE_NAME = "{}_sampling_mccfr_solver_autobattler_7power_fixed_{}_{}.pickle"
+MODEL_FILE_NAME = "{}_sampling_mccfr_solver_autobattler_7power_fixed2_{}_{}.pickle"
 
 itertaions = 7000
 key_step = 500
@@ -84,7 +84,7 @@ def calcul(i):
     rules_fut = open_spiel.python.games.ma_autobattler_poker.all_stats[i]
     print(MODEL_FILE_NAME.format(sampling,i,itertaions))
     name_fut = MODEL_FILE_NAME.format(sampling,i,itertaions)
-    if  os.path.exists(name_fut) or os.path.exists(name_fut+".done"):
+    if  os.path.exists(name_fut) or os.path.exists(name_fut[:-1]+".done") or os.path.exists(name_fut+".")  or os.path.exists(name_fut+".d.done") or os.path.exists(name_fut+".done") or os.path.exists(name_fut+".done"+".done2"):
       return
     # if rules_fut[0][1]!=6:
     #   continue
@@ -109,7 +109,7 @@ def main(_):
       "python_kuhn_poker"
   )
   pids = []
-  for i in range(3000,5040):
+  for i in range(5040):
     # rn_v = random.randint(0, 30)
     # if rn_v!=1:
     #   continue
