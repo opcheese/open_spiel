@@ -136,6 +136,7 @@ class MaAutobattlerGame(pyspiel.Game):
     self.rules = params["rules"]
     self.total_cards = TOTAL_CARDS
     self.stats = all_stats[self.rules]
+  
   def new_initial_state(self):
     """Returns a state corresponding to the start of a game."""
     return MaAutobattlerState(self,self.rules)
