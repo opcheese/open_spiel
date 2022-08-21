@@ -34,12 +34,12 @@ import datetime
 import os,glob
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
-import pandas as pd
+
 import logging
 from tqdm import tqdm
 from pathlib import Path 
 import ray
-from ray.tune.integration.mlflow import mlflow_mixin
+
 
 logging.basicConfig(filename='example.log',level=logging.FATAL)
 ray.init()
@@ -96,11 +96,11 @@ def main(_):
   print(uri)
   remote_server_uri = uri # set to your server URI
   mlflow.set_tracking_uri(remote_server_uri)
-  mlflow.set_experiment("AutoBattlerMaybeCorrect5")
+  mlflow.set_experiment("AutoBattlerMaybeCorrect6")
 
   experiments_path = "/home/wurk/w/spiel/Experiments/"
   base_pickle_path = "/home/wurk/w/spiel"
-  b = glob.glob(base_pickle_path+"/"+"external_sampling_mccfr_solver_autobattler_7power_fixed2_*.pickle.done*")
+  b = glob.glob(base_pickle_path+"/"+"external_sampling_mccfr_solver_autobattler_7power_fixed2_*.pickle")
   print(b)
 
   @ray.remote
@@ -124,7 +124,12 @@ def main(_):
       log_meta = False
       file_name = file
       with open(file_name, 'rb') as fp:
-            solver = pickle.load(fp)
+            print(file_name)
+            try: 
+              solver = pickle.load(fp)
+            except:
+              print("failde" + file_name)
+              return None
 
       a = solver.average_policy()
       
@@ -186,6 +191,7 @@ def main(_):
 
                     card = state.action_to_card(p,state.current_player())
                     card_counter_discarded[card]+=1
+                    
                     card_policy = state.policy_to_cards(state_policy,state.current_player())
                     
                     # if card_policy[0] >0 and card_policy[4]>0:
@@ -227,7 +233,8 @@ def main(_):
                 a0 +=1
               else:
                 raise("value is {}".format(game_res))
-      self.report= {"gr":rul_str, "fn":file_name, "a1": a1, "a2": a2, "a0":a0,"one_useless":one_useless,"no_choice":no_choice,"all_equal":all_equal }
+      self.report= {"kept":card_counter_kept,"discarded":card_counter_discarded,"gr":rul_str, "fn":file_name, "a1": a1, "a2": a2, "a0":a0,"one_useless":one_useless,"no_choice":no_choice,"all_equal":all_equal }
+      
       #print(res)
       # mlflow.log_metric("a1", res["a1"])
       # mlflow.log_metric("a2", res["a2"])
@@ -252,7 +259,7 @@ def main(_):
     
            
   cou = 0
-  for file in glob.glob(base_pickle_path+"/"+"external_sampling_mccfr_solver_autobattler_7power_fixed2_*.pickle.done"):
+  for file in glob.glob(base_pickle_path+"/"+"external_sampling_mccfr_solver_autobattler_7power_fixed2_*.pickle"):
     cou+=1
      
     parsed_name = parse_filename(Path(file).name)
@@ -302,18 +309,25 @@ def main(_):
       if cou%20==0:
         for report in reports:
             res = ray.get(report)
-            with mlflow.start_run():
-                mlflow.log_param("rules",res["gr"])
-                mlflow.log_param("tag",res["fn"])
-                mlflow.set_tag("power","7power")
-                mlflow.log_metric("a1", res["a1"])
-                mlflow.log_metric("a2", res["a2"])
-                mlflow.log_metric("adif", res["a2"]-res["a1"])
+            if res!=None:
+              with mlflow.start_run():
+                  mlflow.log_param("rules",res["gr"])
+                  mlflow.log_param("tag",res["fn"])
+                  mlflow.set_tag("power","7power")
+                  mlflow.log_metric("a1", res["a1"])
+                  mlflow.log_metric("a2", res["a2"])
+                  mlflow.log_metric("adif", res["a2"]-res["a1"])
+                  mlflow.log_metric("a_dif_abs", abs(res["a2"]-res["a1"])  )
 
-                mlflow.log_metric("a0", res["a0"])
-                mlflow.log_metric("one_useless", res["one_useless"])
-                mlflow.log_metric("all_equal", res["all_equal"])
-                mlflow.log_metric("no_choice", res["no_choice"])
+
+                  mlflow.log_metric("a0", res["a0"])
+                  mlflow.log_metric("one_useless", res["one_useless"])
+                  mlflow.log_metric("all_equal", res["all_equal"])
+                  mlflow.log_metric("no_choice", res["no_choice"])
+                  for ind,card in enumerate(res["discarded"]):
+                        mlflow.log_metric("card_discraded"+str(ind), card)
+                  for ind,card in enumerate(res["kept"]):
+                        mlflow.log_metric("card_kept"+str(ind), card)
         reports = []
         
 
