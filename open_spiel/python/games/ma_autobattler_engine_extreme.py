@@ -95,7 +95,7 @@ class EqualStatAbility(BasicAbility):
         while len(side) > 0:
             for old_card in side:
                 if card.stat == old_card.stat:
-                    state.buf_amount(card,old_card.stat+2)
+                    state.buf_amount(card,old_card.stat*3)
                 state.kill_card(old_card)
         state.clean_up()
         
@@ -105,7 +105,7 @@ class EqualStatAbility(BasicAbility):
         res =  type(self).__name__
         return res
 
-class FighterAbility(BasicAbility):
+class SameEnemySuitAbility(BasicAbility):
     """double stat if enemy of the same suit"""
     def __init__(self):
         pass
@@ -114,7 +114,7 @@ class FighterAbility(BasicAbility):
         side =  state.left_side if card.side_num ==1 else state.right_side
         enemy = side[0]
         if not enemy.suit==card.suit:
-            state.buf_amount(card,card.stat)
+            state.buf_amount(card,card.stat*2)
 
 class DavidAbility(BasicAbility):
     """Get stat equal to enemy"""
@@ -134,9 +134,9 @@ class MartyrdomAbility(BasicAbility):
     def swangsong(self,state,side_num,card):
         side =  state.left_side if side_num ==1 else state.right_side
         for card in side:
-          card.take_damage(2)
+          #card.take_damage(2)
           #if (card.stat>3):
-          #state.kill_card(card)
+          state.kill_card(card)
         state.clean_up()
 
 class TokenAbility(BasicAbility):
@@ -146,7 +146,7 @@ class TokenAbility(BasicAbility):
         
     def swangsong(self,state,side_num,card):
         side =  state.left_side if side_num ==0 else state.right_side
-        token = state.create_card(1,0,card.suit)
+        token = state.create_card(4,0,card.suit)
         state.add_card(token,side_num)
 
 class ToxicAbility(BasicAbility):
@@ -157,7 +157,7 @@ class ToxicAbility(BasicAbility):
     def swangsong(self,state,side_num,card):
         side = state.left_side if side_num ==1 else state.right_side
         if len(side)>0:
-            state.buf_amount(side[0],2)
+            state.buf_amount(side[0],side[0].stat)
             #side[0].stat+=2
 
 class InfestAbility(BasicAbility):
@@ -169,7 +169,7 @@ class InfestAbility(BasicAbility):
         state.clean_up()
         side =  state.left_side if side_num ==1 else state.right_side
         if len(side)>0:
-            state.take_damage(side[0],2)
+            state.take_damage(side[0],side[0].stat/2)
           #side[0].take_damage(2)
         else:
             token = state.create_card(1,-1,card.suit)
@@ -654,7 +654,7 @@ Ability_List.append(BasicAbility())
 Ability_List.append(MartyrdomAbility())
 Ability_List.append(TokenAbility())
 Ability_List.append(SameSuitAbility())
-Ability_List.append(FighterAbility())
+Ability_List.append(SameEnemySuitAbility())
 Ability_List.append(EqualStatAbility())
 Ability_List.append(DavidAbility())
 Ability_List.append(InfestAbility())
