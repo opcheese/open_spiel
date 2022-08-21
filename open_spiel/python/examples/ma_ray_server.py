@@ -45,13 +45,13 @@ class NpEncoder(json.JSONEncoder):
 @serve.deployment
 @serve.ingress(app)
 class GameEngineServer:
-    def __init__(self, rules: int = 1):
+    def __init__(self, rules: int = 2134):
         game = open_spiel.python.games.ma_autobattler_poker.MaAutobattlerGame({"rules":rules})
         
         self.summarize = "123"
         base_pickle_path = config["ROOTPATH"]
         template_name = config["TEMPLATENAME"]
-        file_name = base_pickle_path+"/"+template_name.format(rules)
+        file_name = base_pickle_path+"/"+template_name.format(rules)+".done"
         with open(file_name, 'rb') as fp:
             solver = pickle.load(fp)
         self.solver = solver
