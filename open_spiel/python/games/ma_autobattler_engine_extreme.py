@@ -592,6 +592,12 @@ class GameEngine():
             return 1 #right winner
         else:
             return 0 #draw
+
+    def return_winner_stat(self):
+        if len(self.board_state.left_side) > len(self.board_state.right_side):
+            return self.board_state.left_side[0].stat #left winner 
+        elif len(self.board_state.left_side) < len(self.board_state.right_side):
+            return self.board_state.right_side[0].stat #right winner
     
     def main_loop(self):
         round_list = []

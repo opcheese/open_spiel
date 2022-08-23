@@ -180,6 +180,8 @@ class MaAutobattlerState(pyspiel.State):
     self.stats = all_stats[rules]
     self.left_discard = -1
     self.right_discard = -1
+    self.winner_stat = 0
+
 
   # OpenSpiel (PySpiel) API functions are below. This is the standard set that
   # should be implemented by every sequential-move game with chance.
@@ -263,6 +265,7 @@ class MaAutobattlerState(pyspiel.State):
       ge = engine.GameEngine(self.left_cards,self.right_cards,self.stats)
       resLog = ge.main_loop()
       res = ge.return_winner()
+      self.winner_stat = ge.return_winner_stat()
       Cache[key] = res
       if res ==-1:
         self.game_res = [1,-1]
