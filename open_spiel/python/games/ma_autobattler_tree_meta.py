@@ -7,6 +7,7 @@ import math
 import random
 import pyspiel
 import logging
+import open_spiel.python.games.ma_autobattler_engine as engine
 
 TOTAL_CARDS = 12
 HAND_SIZE = 3
@@ -46,6 +47,9 @@ def genStats(ability_order):
     return one_stats
 
 all_stats = {}
+all_stats_by_ind = {}
+
+
 one_suit = int(TOTAL_CARDS/SUIT_NUMBER)
 
 for main_ind,power_list in enumerate(powered_cards_list):
@@ -53,8 +57,9 @@ for main_ind,power_list in enumerate(powered_cards_list):
     
     for ind,power in enumerate(power_list):
         ability_orders[power] = ind+1
-    all_stats[main_ind] = genStats(ability_orders)
-
+    x = genStats(ability_orders)
+    all_stats[str(ability_orders)] = x
+    all_stats_by_ind[main_ind] = ability_orders
 
 
 _NUM_PLAYERS = 3
@@ -88,6 +93,8 @@ class MaAutobattlerGameTreeMeta(pyspiel.Game):
   def __init__(self, params=None):
     super().__init__(_GAME_TYPE, _GAME_INFO, params or dict())
     self.total_cards = TOTAL_CARDS
+
+  
 
   def new_initial_state(self):
     """Returns a state corresponding to the start of a game."""
@@ -124,13 +131,16 @@ class MaAutobattlerTreeMetaState(pyspiel.State):
     self.stats_ind = -1
     self.winner_stat = 0
     self.meta_choices = []
+    self.open_choices = list(range(1,8))
     self.meta_stage = 0
     self.action_stage = 0
-    self.total_meta_stages = 6    
+    self.total_meta_stages = 7    
 
   def get_stage(self):
     return self.meta_stage + self.action_stage
     
+  def rules_to_str(self):
+    raise NotImplementedError()
 
 
   # OpenSpiel (PySpiel) API functions are below. This is the standard set that
@@ -142,7 +152,7 @@ class MaAutobattlerTreeMetaState(pyspiel.State):
     if self._game_over:
       return pyspiel.PlayerId.TERMINAL
     elif stage < self.total_meta_stages:
-      return -2
+      return 2
     elif self.action_stage == 0:
       return pyspiel.PlayerId.CHANCE
     elif self.action_stage==3:
@@ -158,23 +168,24 @@ class MaAutobattlerTreeMetaState(pyspiel.State):
   def _legal_actions(self, player):
     """Returns a list of legal actions, sorted in ascending order."""
     assert player >= 0
+    stage = self.get_stage()
     if self._game_over:
       return 0
-    elif self.stage==-1:
+    elif stage < self.total_meta_stages:
       if player == 2:
-        return all_stats_indx
+        return self.open_choices
       else:
         return []
-    elif self.stage == 0:
+    elif self.action_stage == 0:
       return []
-    elif self.stage==3:
+    elif self.action_stage==3:
       return []
-    elif self.stage == 1:
+    elif self.action_stage == 1:
        if player == 0:
            return [0,1,2]
        else:
           return []
-    elif self.stage == 2:
+    elif self.action_stage == 2:
        if player == 1:
            return [0,1,2]
        else:
@@ -185,7 +196,7 @@ class MaAutobattlerTreeMetaState(pyspiel.State):
   def chance_outcomes(self):
     """Returns the possible chance outcomes and their probabilities."""
     assert self.is_chance_node()
-    if self.stage == 0:
+    if self.action_stage == 0:
       outcomes = all_deals_ind
     else:
       outcomes = [0,1,2,3]
@@ -202,6 +213,7 @@ class MaAutobattlerTreeMetaState(pyspiel.State):
 
   
   def policy_to_cards(self,policy,player):
+    raise NotImplementedError()
     res = np.zeros(TOTAL_CARDS)
     for ind,prob in enumerate(policy[0:3]):
       card = self.action_to_card(ind,player)
@@ -212,38 +224,38 @@ class MaAutobattlerTreeMetaState(pyspiel.State):
 
 
   def _apply_action(self, action):
-    """Applies the specified action to the state."""
-    logger.debug("stage is {}, applying {}".format(self.stage,action))
+    """Applies the specified action to the state."""    
     
-    if self.stage == -1:
-      self.stats = all_stats[action]
-      self.stats_ind = action
-      if action not in Cache:
-        Cache[action] = {}
-      self.stage = 0
+    stage = self.get_stage()
+
+    if stage < self.total_meta_stages:
+      self.meta_choices.append(action)
+      self.open_choices.remove(action)
+      self.meta_stage+=1
       return
 
-    if self.stage == 0:
+
+    if self.action_stage == 0:
       deal = all_deals[action]
       self.left_cards = deal[0]
       self.right_cards = deal[1]
-      self.stage = 1
+      self.action_stage = 1
       return
     
-    if self.stage == 1:
+    if self.action_stage == 1:
       # 1st player choosing
       self.left_discard =  self.left_cards[action]
 
       self.left_cards = [x for x in self.left_cards if x != self.left_discard]
-      self.stage = 2
+      self.action_stage = 2
       return
-    if self.stage == 2:
+    if self.action_stage == 2:
       self.right_discard = self.right_cards[action]
       self.right_cards = [x for x in self.right_cards if x !=  self.right_discard]
-      self.stage = 3
+      self.action_stage = 3
       return
 
-    if self.stage == 3:
+    if self.action_stage == 3:
       # shuffle. 
       if action == 0:
         pass
@@ -257,26 +269,27 @@ class MaAutobattlerTreeMetaState(pyspiel.State):
 
     #the game
     key = str(self.left_cards) + " " + str(self.right_cards)
-    logger.debug(str(self.left_cards) + " " + str(self.right_cards))
-    if key in Cache[self.stats_ind]:
-      res = Cache[self.stats_ind][key]
-      if res ==-1:
-        self.game_res = [1,-1]
-      elif res == 1:
-        self.game_res = [-1,1]  
-      else:
-        self.game_res = [0,0] 
+    # logger.debug(str(self.left_cards) + " " + str(self.right_cards))
+    # if key in Cache[self.stats_ind]:
+    #   res = Cache[self.stats_ind][key]
+    #   if res ==-1:
+    #     self.game_res = [1,-1]
+    #   elif res == 1:
+    #     self.game_res = [-1,1]  
+    #   else:
+    #     self.game_res = [0,0] 
+    # else:
+    self.stats = genStats(self.meta_choices)
+    ge = engine.GameEngine(self.left_cards,self.right_cards,self.stats)
+    ge.main_loop()
+    res = ge.return_winner()
+    #Cache[self.stats_ind][key] = res
+    if res ==-1:
+      self.game_res = [1,-1]
+    elif res == 1:
+      self.game_res = [-1,1]  
     else:
-      ge = GameEngine(self.left_cards,self.right_cards,self.stats)
-      ge.main_loop()
-      res = ge.return_winner()
-      Cache[self.stats_ind][key] = res
-      if res ==-1:
-        self.game_res = [1,-1]
-      elif res == 1:
-        self.game_res = [-1,1]  
-      else:
-        self.game_res = [0,0]
+      self.game_res = [0,0]
     
     self._game_over = True
 
@@ -284,8 +297,13 @@ class MaAutobattlerTreeMetaState(pyspiel.State):
 
   def _action_to_string(self, player, action):
     """Action -> string."""
-    if self.stage == -1:
-      return str(all_stats[action])
+
+    stage = self.get_stage()
+
+    if stage < self.total_meta_stages:
+      number_choice = len(self.meta_choices)
+      desc = "Meta {}:{}".format(number_choice,action)
+      return desc    
     if self.stage == 0:
       return str(all_deals[action])
     elif self.stage==3:
@@ -328,24 +346,23 @@ class MaAutobattlerTreeMetaState(pyspiel.State):
     return "left cards {}, right cards {}, res {}".format(self.left_cards,self.right_cards,self.game_res)
 
 
-class MaAutobattlerObserver:
+class MaAutobattlerTreeMetaObserver:
   """Observer, conforming to the PyObserver interface (see observation.py)."""
-
   def __init__(self, iig_obs_type, params):
     """Initializes an empty observation tensor."""
     if params:
       raise ValueError(f"Observation parameters not supported; passed {params}")
 
     # Determine which observation pieces we want to include.
-    pieces = [("player", 3, (3,))]
+    pieces = [("player", 2, (2,))]
     if iig_obs_type.private_info == pyspiel.PrivateInfoType.SINGLE_PLAYER:
-      pieces.append(("hand", 8, (8,)))
-      pieces.append(("discard", 8, (8,)))
+      pieces.append(("hand", TOTAL_CARDS, (TOTAL_CARDS,)))
+      pieces.append(("discard", TOTAL_CARDS, (TOTAL_CARDS,)))
 
     if iig_obs_type.public_info:
-       pieces.append(("stats", len(all_stats), (len(all_stats),)))
-       pieces.append(("cur_stage", 5, (5,)))
-       
+      pieces.append(("meta", 7, (7,)))
+
+    # if iig_obs_type.public_info:
     #   if iig_obs_type.perfect_recall:
     #     pieces.append(("betting", 6, (3, 2)))
     #   else:
@@ -367,10 +384,8 @@ class MaAutobattlerObserver:
     self.tensor.fill(0)
     if "player" in self.dict:
       self.dict["player"][player] = 1
-    if "stats" in self.dict:
-      self.dict["stats"][state.stats_ind] = 1
-    if "cur_stage" in self.dict:
-      self.dict["cur_stage"][state.stage+1] = 1
+    if "meta" in self.dict:
+      self.dict["meta"] = np.array(state.meta_choices)
     if "hand" in self.dict:
       if player == 0:
         for card in state.left_cards:
@@ -378,15 +393,16 @@ class MaAutobattlerObserver:
       elif player == 1:
          for card in state.right_cards:
           self.dict["hand"][card] = 1
-     
+      else:
+        raise Exception("Strange state")
     
     if "discard" in self.dict:
       if player == 0:
         self.dict["discard"][state.left_discard] = 1
       elif player == 1:
         self.dict["discard"][state.right_discard] = 1
-      # else:
-      #   raise Exception("Strange state 2")
+      else:
+        raise Exception("Strange state 2")
 
     
    
@@ -396,26 +412,45 @@ class MaAutobattlerObserver:
     pieces = []
     if "player" in self.dict:
       pieces.append(f"p{player}")
-    if "stats" in self.dict:
-      pieces.append(f"stat:{state.stats_ind}")
-    if "cur_stage" in self.dict:
-      pieces.append(f"stage:{state.stage}")
-
+    if "meta" in self.dict:
+      pieces.append(f"meta{str(state.meta_choices)}")
     if "hand" in self.dict:
       if player == 0:
         pieces.append(f"hand:{state.left_cards}")
-      elif player == 1:
+      else:
         pieces.append(f"hand:{state.right_cards}")
     if "discard" in self.dict:
-      if player == 1:
-        pieces.append(f"discard:{state.left_discard}")
-      elif player == 1:
-        pieces.append(f"discard:{state.right_discard}")
+      if player == 0:
+        pieces.append(f"hand:{state.left_discard}")
+      else:
+        pieces.append(f"hand:{state.right_discard}")
     #print(state)
     #print(self.dict)
     return " ".join(str(p) for p in pieces)
 
-
 # Register the game with the OpenSpiel library
 
-pyspiel.register_game(_GAME_TYPE, MaAutobattlerGameMeta)
+pyspiel.register_game(_GAME_TYPE, MaAutobattlerGameTreeMeta)
+
+if __name__ == "__main__":
+  #print(all_stats)
+  gam = MaAutobattlerGameTreeMeta()
+
+  st = gam.new_initial_state()
+
+  st._apply_action(1)
+  st._apply_action(2)
+  st._apply_action(3)
+  st._apply_action(4)
+  st._apply_action(5)
+  st._apply_action(6)
+  st._apply_action(7)
+  
+  st._apply_action(0)
+  st._apply_action(0)
+  st._apply_action(0)
+  st._apply_action(0)
+
+  abc = st
+  
+  

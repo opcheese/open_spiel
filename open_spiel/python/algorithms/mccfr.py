@@ -19,6 +19,7 @@ from open_spiel.python import policy
 
 REGRET_INDEX = 0
 AVG_POLICY_INDEX = 1
+VISITS = 2
 
 
 class AveragePolicy(policy.Policy):
@@ -92,6 +93,7 @@ class MCCFRSolverBase(object):
     self._infostates[info_state_key] = [
         np.ones(num_legal_actions, dtype=np.float64) / 1e6,
         np.ones(num_legal_actions, dtype=np.float64) / 1e6,
+        np.zeros(num_legal_actions, dtype=np.int32),
     ]
     return self._infostates[info_state_key]
 
@@ -100,6 +102,9 @@ class MCCFRSolverBase(object):
 
   def _add_avstrat(self, info_state_key, action_idx, amount):
     self._infostates[info_state_key][AVG_POLICY_INDEX][action_idx] += amount
+  
+  def _add_avvisit(self, info_state_key, action_idx, amount):
+    self._infostates[info_state_key][VISITS][action_idx] += amount
 
   def average_policy(self):
     """Computes the average policy, containing the policy for all players.
