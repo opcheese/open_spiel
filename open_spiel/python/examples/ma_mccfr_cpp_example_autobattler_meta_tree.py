@@ -48,14 +48,14 @@ ray.init(address="auto",runtime_env=runtime_env)
 # flags.DEFINE_integer("players", 2, "Number of players")
 
 
-itertaions = 10
+itertaions = 10000
 key_step = 500
 path = "/tmp/"
 
 def run_iterations(game, solver, start_iteration=0):
   """Run iterations of MCCFR."""
   for i in range(int(itertaions)):
-    print(i)
+    #print(i)
     solver.iteration()
 
     # if i%key_step == 0 and i!=0 :
@@ -121,7 +121,7 @@ def main(_):
   
   pids = []
   old = 0
-  for i in range(100,5040,100):
+  for i in range(144,5040,144):
 
     # rn_v = random.randint(0, 30)
     # if rn_v!=1:
