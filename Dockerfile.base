@@ -40,7 +40,7 @@ FROM python:3.6-slim-buster as python-slim
 RUN mkdir repo
 WORKDIR /repo
 COPY --from=base /repo .
-RUN pip3 install --upgrade -r requirements.txt
+RUN pip3 install --upgrade -r requirements2.txt
 RUN pip3 install matplotlib
 ENV PYTHONPATH=${PYTHONPATH}:/repo
 ENV PYTHONPATH=${PYTHONPATH}:/repo/build/python

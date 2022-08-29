@@ -121,16 +121,19 @@ def main(_):
   
   pids = []
   old = 0
-  for i in range(144,5040,144):
 
-    # rn_v = random.randint(0, 30)
-    # if rn_v!=1:
-    #   continue
-    # if i%20==0:
-    #   continue
-    pid = calcul.remote(old,i)
-    pids.append(pid)
-    old = i
+  ranges = [(3744,3888),(3888,4032),(4464,4608),(4752,4896),(4896,5040)]
+  for rang in ranges:
+    for i in range(rang[0],rang[1]):
+
+      # rn_v = random.randint(0, 30)
+      # if rn_v!=1:
+      #   continue
+      # if i%20==0:
+      #   continue
+      pid = calcul.remote(old,i)
+      pids.append(pid)
+      old = i
   ray.get(pids)
 
   
