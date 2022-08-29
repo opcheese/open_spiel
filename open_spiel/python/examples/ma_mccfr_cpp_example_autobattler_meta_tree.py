@@ -133,7 +133,7 @@ def main(_):
     pid = calcul.remote(rang[0],rang[1])
     pids.append(pid)
     
-    ray.get(pids)
+  ray.get(pids)
 
   
 
