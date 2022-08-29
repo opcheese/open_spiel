@@ -119,22 +119,21 @@ def main(_):
   else:
         print("Bucket 'treemeta' already exists")
   
-  pids = []
-  old = 0
+  pids = []  
 
   ranges = [(3744,3888),(3888,4032),(4464,4608),(4752,4896),(4896,5040)]
-  for rang in ranges:
-    for i in range(rang[0],rang[1]):
+  for rang in ranges:   
+      
 
-      # rn_v = random.randint(0, 30)
-      # if rn_v!=1:
-      #   continue
-      # if i%20==0:
-      #   continue
-      pid = calcul.remote(old,i)
-      pids.append(pid)
-      old = i
-  ray.get(pids)
+  # rn_v = random.randint(0, 30)
+  # if rn_v!=1:
+  #   continue
+  # if i%20==0:
+  #   continue
+    pid = calcul.remote(rang[0],rang[1])
+    pids.append(pid)
+    
+    ray.get(pids)
 
   
 
